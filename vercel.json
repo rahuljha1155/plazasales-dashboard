@@ -1,0 +1,12 @@
+{
+    "rewrites": [
+      {
+        "source": "/api/:path*",
+        "destination": "https://plaza-api.webxnepal.com/api/v1/plaza/:path*"
+      },
+      {
+        "source": "/(.*)",
+        "destination": "/index.html"
+      }
+    ]
+}

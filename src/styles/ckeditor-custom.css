@@ -1,0 +1,780 @@
+/* CKEditor 5 Custom Styles - Isolated from Tailwind */
+
+/* Editor container */
+.ckeditor-wrapper {
+  all: initial;
+  display: block;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+}
+
+.ckeditor-wrapper * {
+  box-sizing: border-box;
+}
+
+/* Editor editable area */
+.ckeditor-wrapper .ck-editor__editable {
+  min-height: 400px;
+  max-height: 800px;
+}
+
+.ckeditor-wrapper .ck.ck-editor__main > .ck-editor__editable {
+  background: #ffffff;
+  color: #000000;
+}
+
+.ckeditor-wrapper .ck.ck-editor__editable_inline {
+  border: 1px solid #c4c4c4;
+  border-radius: 0 0 4px 4px;
+}
+
+.ckeditor-wrapper .ck.ck-editor__editable:not(.ck-editor__nested-editable).ck-focused {
+  border-color: #f92e2e;
+  outline: none;
+}
+
+/* Toolbar */
+.ckeditor-wrapper .ck.ck-toolbar {
+  background: #f7f7f7;
+  border: 1px solid #c4c4c4;
+  border-radius: 4px 4px 0 0;
+  border-bottom: none;
+  padding: 8px;
+}
+
+.ckeditor-wrapper .ck.ck-toolbar .ck-toolbar__separator {
+  background: #c4c4c4;
+}
+
+.ckeditor-wrapper .ck.ck-button:not(.ck-disabled):hover {
+  background: #e8e8e8;
+}
+
+.ckeditor-wrapper .ck.ck-button:not(.ck-disabled):active,
+.ckeditor-wrapper .ck.ck-button.ck-on {
+  background: #dedede;
+}
+
+/* Table styles */
+.ckeditor-wrapper .ck-content .table {
+  margin: 1em auto;
+  display: table;
+}
+
+.ckeditor-wrapper .ck-content .table table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  width: 100%;
+  height: 100%;
+  border: 1px solid hsl(0, 0%, 75%);
+}
+
+.ckeditor-wrapper .ck-content .table table td,
+.ckeditor-wrapper .ck-content .table table th {
+  min-width: 2em;
+  padding: 0.4em;
+  border: 1px solid hsl(0, 0%, 75%);
+  vertical-align: top;
+}
+
+.ckeditor-wrapper .ck-content .table table th {
+  font-weight: bold;
+  background: hsla(0, 0%, 0%, 5%);
+}
+
+/* Table selection styles - Critical for merge to work */
+.ckeditor-wrapper .ck-content .table td.ck-editor__editable_selected,
+.ckeditor-wrapper .ck-content .table th.ck-editor__editable_selected {
+  background-color: rgba(158, 207, 254, 0.3);
+  outline: 1px solid rgba(158, 207, 254, 0.8);
+  outline-offset: -1px;
+}
+
+.ckeditor-wrapper .ck-widget.table td.ck-editor__nested-editable.ck-editor__nested-editable_focused,
+.ckeditor-wrapper .ck-widget.table th.ck-editor__nested-editable.ck-editor__nested-editable_focused {
+  background: #ffffff;
+  border-color: #1b9aeb;
+  outline: 1px solid #1b9aeb;
+  outline-offset: -1px;
+}
+
+/* Table widget selection */
+.ckeditor-wrapper .ck-widget.table.ck-widget_selected {
+  outline: 2px solid #1b9aeb;
+  outline-offset: -1px;
+}
+
+/* Table cell selection highlight */
+.ckeditor-wrapper .ck-content .table table td::selection,
+.ckeditor-wrapper .ck-content .table table th::selection {
+  background-color: rgba(158, 207, 254, 0.5);
+}
+
+/* Table caption */
+.ckeditor-wrapper .ck-content .table > figcaption {
+  display: table-caption;
+  caption-side: top;
+  word-break: break-word;
+  text-align: center;
+  color: hsl(0, 0%, 20%);
+  background-color: hsl(0, 0%, 97%);
+  padding: 0.6em;
+  font-size: 0.75em;
+  outline-offset: -1px;
+}
+
+/* Image styles */
+.ckeditor-wrapper .ck-content .image {
+  display: table;
+  clear: both;
+  text-align: center;
+  margin: 1em auto;
+}
+
+.ckeditor-wrapper .ck-content .image img {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+  min-width: 50px;
+  height: auto;
+}
+
+/* Image alignment styles */
+.ckeditor-wrapper .ck-content .image-style-align-left {
+  float: left;
+  margin-right: 1.5em;
+  margin-left: 0;
+}
+
+.ckeditor-wrapper .ck-content .image-style-align-center {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.ckeditor-wrapper .ck-content .image-style-align-right {
+  float: right;
+  margin-left: 1.5em;
+  margin-right: 0;
+}
+
+.ckeditor-wrapper .ck-content .image-style-block-align-left {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.ckeditor-wrapper .ck-content .image-style-block-align-right {
+  margin-right: 0;
+  margin-left: auto;
+}
+
+/* Image inline styles */
+.ckeditor-wrapper .ck-content .image-inline {
+  display: inline-block;
+  margin: 0 0.5em;
+  vertical-align: middle;
+}
+
+/* Image side styles */
+.ckeditor-wrapper .ck-content .image-style-side {
+  float: right;
+  margin-left: 1.5em;
+  max-width: 50%;
+}
+
+/* Image border radius support */
+.ckeditor-wrapper .ck-content .image img[style*="border-radius"] {
+  border-radius: inherit;
+}
+
+.ckeditor-wrapper .ck-content .image.rounded img {
+  border-radius: 8px;
+}
+
+.ckeditor-wrapper .ck-content .image.rounded-full img {
+  border-radius: 50%;
+}
+
+.ckeditor-wrapper .ck-content .image.rounded-lg img {
+  border-radius: 16px;
+}
+
+/* Blockquote */
+.ckeditor-wrapper .ck-content blockquote {
+  overflow: hidden;
+  padding-right: 1.5em;
+  padding-left: 1.5em;
+  margin-left: 0;
+  margin-right: 0;
+  font-style: italic;
+  border-left: solid 5px hsl(0, 0%, 80%);
+}
+
+/* Code block */
+.ckeditor-wrapper .ck-content code {
+  background-color: hsla(0, 0%, 78%, 0.3);
+  padding: 0.15em;
+  border-radius: 2px;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.ckeditor-wrapper .ck-content pre {
+  padding: 1em;
+  color: hsl(0, 0%, 20.8%);
+  background: hsla(0, 0%, 78%, 0.3);
+  border: 1px solid hsl(0, 0%, 77%);
+  border-radius: 2px;
+  text-align: left;
+  direction: ltr;
+  tab-size: 4;
+  white-space: pre-wrap;
+  font-style: normal;
+  min-width: 200px;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+/* Horizontal line */
+.ckeditor-wrapper .ck-content hr {
+  margin: 15px 0;
+  height: 1px;
+  background: hsl(0, 48%, 32%);
+  border: 0;
+}
+
+/* Lists */
+.ckeditor-wrapper .ck-content ul,
+.ckeditor-wrapper .ck-content ol {
+  padding-left: 2em;
+}
+
+.ckeditor-wrapper .ck-content ul {
+  list-style-type: disc;
+}
+
+.ckeditor-wrapper .ck-content ol {
+  list-style-type: decimal;
+}
+
+.ckeditor-wrapper .ck-content ul ul,
+.ckeditor-wrapper .ck-content ol ul {
+  list-style-type: circle;
+}
+
+.ckeditor-wrapper .ck-content ul ul ul,
+.ckeditor-wrapper .ck-content ol ul ul {
+  list-style-type: square;
+}
+
+.ckeditor-wrapper .ck-content ul ol,
+.ckeditor-wrapper .ck-content ol ol {
+  list-style-type: lower-latin;
+}
+
+.ckeditor-wrapper .ck-content ul ol ol,
+.ckeditor-wrapper .ck-content ol ol ol {
+  list-style-type: lower-roman;
+}
+
+/* Todo list */
+.ckeditor-wrapper .ck-content .todo-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.ckeditor-wrapper .ck-content .todo-list li {
+  margin-bottom: 5px;
+  position: relative;
+}
+
+.ckeditor-wrapper .ck-content .todo-list li .todo-list__label > input {
+  margin-right: 8px;
+}
+
+/* Headings */
+.ckeditor-wrapper .ck-content h1 {
+  font-size: 2em;
+  font-weight: bold;
+  margin: 0.67em 0;
+}
+
+.ckeditor-wrapper .ck-content h2 {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin: 0.83em 0;
+}
+
+.ckeditor-wrapper .ck-content h3 {
+  font-size: 1.17em;
+  font-weight: bold;
+  margin: 1em 0;
+}
+
+.ckeditor-wrapper .ck-content h4 {
+  font-size: 1em;
+  font-weight: bold;
+  margin: 1.33em 0;
+}
+
+.ckeditor-wrapper .ck-content h5 {
+  font-size: 0.83em;
+  font-weight: bold;
+  margin: 1.67em 0;
+}
+
+.ckeditor-wrapper .ck-content h6 {
+  font-size: 0.67em;
+  font-weight: bold;
+  margin: 2.33em 0;
+}
+
+/* Paragraph */
+.ckeditor-wrapper .ck-content p {
+  margin: 1em 0;
+}
+
+/* Links */
+.ckeditor-wrapper .ck-content a {
+  color: #0000ff;
+  text-decoration: underline;
+}
+
+/* Dark mode support */
+.dark .ckeditor-wrapper .ck.ck-editor__main > .ck-editor__editable {
+  background: hsl(0, 0%, 15%);
+  color: hsl(0, 0%, 93%);
+  border-color: hsl(0, 0%, 30%);
+}
+
+.dark .ckeditor-wrapper .ck.ck-toolbar {
+  background: hsl(0, 0%, 20%);
+  border-color: hsl(0, 0%, 30%);
+}
+
+.dark .ckeditor-wrapper .ck.ck-button:not(.ck-disabled):hover {
+  background: hsl(0, 0%, 25%);
+}
+
+.dark .ckeditor-wrapper .ck.ck-button:not(.ck-disabled):active,
+.dark .ckeditor-wrapper .ck.ck-button.ck-on {
+  background: hsl(0, 0%, 30%);
+}
+
+.dark .ckeditor-wrapper .ck-content .table table th {
+  background: hsla(0, 0%, 100%, 10%);
+}
+
+.dark .ckeditor-wrapper .ck-content blockquote {
+  border-left-color: hsl(0, 0%, 40%);
+}
+
+.dark .ckeditor-wrapper .ck-content code {
+  background-color: hsla(0, 0%, 78%, 0.2);
+}
+
+.dark .ckeditor-wrapper .ck-content pre {
+  background: hsla(0, 0%, 78%, 0.2);
+  border-color: hsl(0, 0%, 40%);
+  color: hsl(0, 0%, 80%);
+}
+
+.dark .ckeditor-wrapper .ck-content a {
+  color: #4d9fff;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .ckeditor-wrapper .ck.ck-toolbar {
+    padding: 4px;
+  }
+  
+  .ckeditor-wrapper .ck-editor__editable {
+    min-height: 300px;
+  }
+}
+
+/* Rendered content styling - matches editor content */
+.ckeditor-content-display {
+  all: initial;
+  display: block;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  line-height: 1.6;
+  color: #000000;
+  background: #ffffff;
+  padding: 1em;
+  min-height: 200px;
+}
+
+.ckeditor-content-display * {
+  box-sizing: border-box;
+}
+
+/* Table styles for rendered content */
+.ckeditor-content-display .table {
+  margin: 1em auto;
+  display: table;
+}
+
+.ckeditor-content-display .table table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  width: 100%;
+  height: 100%;
+  border: 1px solid hsl(0, 0%, 75%);
+}
+
+.ckeditor-content-display .table table td,
+.ckeditor-content-display .table table th {
+  min-width: 2em;
+  padding: 0.4em;
+  border: 1px solid hsl(0, 0%, 75%);
+  vertical-align: top;
+}
+
+.ckeditor-content-display .table table th {
+  font-weight: bold;
+  background: hsla(0, 0%, 0%, 5%);
+}
+
+.ckeditor-content-display .table > figcaption {
+  display: table-caption;
+  caption-side: top;
+  word-break: break-word;
+  text-align: center;
+  color: hsl(0, 0%, 20%);
+  background-color: hsl(0, 0%, 97%);
+  padding: 0.6em;
+  font-size: 0.75em;
+}
+
+/* Direct table without figure wrapper */
+.ckeditor-content-display table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  width: 100%;
+  margin: 1em auto;
+  border: 1px solid hsl(0, 0%, 75%);
+}
+
+.ckeditor-content-display table td,
+.ckeditor-content-display table th {
+  min-width: 2em;
+  padding: 0.4em;
+  border: 1px solid hsl(0, 0%, 75%);
+  vertical-align: top;
+}
+
+.ckeditor-content-display table th {
+  font-weight: bold;
+  background: hsla(0, 0%, 0%, 5%);
+}
+
+/* Image styles for rendered content */
+.ckeditor-content-display .image {
+  display: table;
+  clear: both;
+  text-align: center;
+  margin: 1em auto;
+}
+
+.ckeditor-content-display .image img {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+  min-width: 50px;
+  height: auto;
+}
+
+.ckeditor-content-display img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Image alignment styles for rendered content */
+.ckeditor-content-display .image-style-align-left {
+  float: left;
+  margin-right: 1.5em;
+  margin-left: 0;
+}
+
+.ckeditor-content-display .image-style-align-center {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.ckeditor-content-display .image-style-align-right {
+  float: right;
+  margin-left: 1.5em;
+  margin-right: 0;
+}
+
+.ckeditor-content-display .image-style-block-align-left {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.ckeditor-content-display .image-style-block-align-right {
+  margin-right: 0;
+  margin-left: auto;
+}
+
+/* Image inline styles for rendered content */
+.ckeditor-content-display .image-inline {
+  display: inline-block;
+  margin: 0 0.5em;
+  vertical-align: middle;
+}
+
+/* Image side styles for rendered content */
+.ckeditor-content-display .image-style-side {
+  float: right;
+  margin-left: 1.5em;
+  max-width: 50%;
+}
+
+/* Image border radius support for rendered content */
+.ckeditor-content-display .image img[style*="border-radius"] {
+  border-radius: inherit;
+}
+
+.ckeditor-content-display .image.rounded img {
+  border-radius: 8px;
+}
+
+.ckeditor-content-display .image.rounded-full img {
+  border-radius: 50%;
+}
+
+.ckeditor-content-display .image.rounded-lg img {
+  border-radius: 16px;
+}
+
+/* Blockquote for rendered content */
+.ckeditor-content-display blockquote {
+  overflow: hidden;
+  padding-right: 1.5em;
+  padding-left: 1.5em;
+  margin-left: 0;
+  margin-right: 0;
+  font-style: italic;
+  border-left: solid 5px hsl(0, 0%, 80%);
+}
+
+/* Code block for rendered content */
+.ckeditor-content-display code {
+  background-color: hsla(0, 0%, 78%, 0.3);
+  padding: 0.15em;
+  border-radius: 2px;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.ckeditor-content-display pre {
+  padding: 1em;
+  color: hsl(0, 0%, 20.8%);
+  background: hsla(0, 0%, 78%, 0.3);
+  border: 1px solid hsl(0, 0%, 77%);
+  border-radius: 2px;
+  text-align: left;
+  direction: ltr;
+  tab-size: 4;
+  white-space: pre-wrap;
+  font-style: normal;
+  min-width: 200px;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.ckeditor-content-display pre code {
+  background: none;
+  padding: 0;
+}
+
+/* Horizontal line for rendered content */
+.ckeditor-content-display hr {
+  margin: 15px 0;
+  height: 4px;
+  background: hsl(0, 0%, 87%);
+  border: 0;
+}
+
+/* Lists for rendered content */
+.ckeditor-content-display ul,
+.ckeditor-content-display ol {
+  padding-left: 2em;
+}
+
+.ckeditor-content-display ul {
+  list-style-type: disc;
+}
+
+.ckeditor-content-display ol {
+  list-style-type: decimal;
+}
+
+.ckeditor-content-display ul ul,
+.ckeditor-content-display ol ul {
+  list-style-type: circle;
+}
+
+.ckeditor-content-display ul ul ul,
+.ckeditor-content-display ol ul ul {
+  list-style-type: square;
+}
+
+.ckeditor-content-display ul ol,
+.ckeditor-content-display ol ol {
+  list-style-type: lower-latin;
+}
+
+.ckeditor-content-display ul ol ol,
+.ckeditor-content-display ol ol ol {
+  list-style-type: lower-roman;
+}
+
+.ckeditor-content-display li {
+  margin-bottom: 0.25em;
+}
+
+/* Todo list for rendered content */
+.ckeditor-content-display .todo-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.ckeditor-content-display .todo-list li {
+  margin-bottom: 5px;
+  position: relative;
+}
+
+.ckeditor-content-display .todo-list li .todo-list__label > input {
+  margin-right: 8px;
+}
+
+/* Headings for rendered content */
+.ckeditor-content-display h1 {
+  font-size: 2em;
+  font-weight: bold;
+  margin: 0.67em 0;
+}
+
+.ckeditor-content-display h2 {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin: 0.83em 0;
+}
+
+.ckeditor-content-display h3 {
+  font-size: 1.17em;
+  font-weight: bold;
+  margin: 1em 0;
+}
+
+.ckeditor-content-display h4 {
+  font-size: 1em;
+  font-weight: bold;
+  margin: 1.33em 0;
+}
+
+.ckeditor-content-display h5 {
+  font-size: 0.83em;
+  font-weight: bold;
+  margin: 1.67em 0;
+}
+
+.ckeditor-content-display h6 {
+  font-size: 0.67em;
+  font-weight: bold;
+  margin: 2.33em 0;
+}
+
+/* Paragraph for rendered content */
+.ckeditor-content-display p {
+  margin: 1em 0;
+}
+
+/* Links for rendered content */
+.ckeditor-content-display a {
+  color: #0000ff;
+  text-decoration: underline;
+}
+
+.ckeditor-content-display a:hover {
+  text-decoration: none;
+}
+
+/* Text formatting for rendered content */
+.ckeditor-content-display strong {
+  font-weight: bold;
+}
+
+.ckeditor-content-display em {
+  font-style: italic;
+}
+
+.ckeditor-content-display u {
+  text-decoration: underline;
+}
+
+.ckeditor-content-display s {
+  text-decoration: line-through;
+}
+
+.ckeditor-content-display sub {
+  vertical-align: sub;
+  font-size: smaller;
+}
+
+.ckeditor-content-display sup {
+  vertical-align: super;
+  font-size: smaller;
+}
+
+/* Dark mode for rendered content */
+.dark .ckeditor-content-display {
+  background: hsl(0, 0%, 15%);
+  color: hsl(0, 0%, 93%);
+}
+
+.dark .ckeditor-content-display table {
+  border-color: hsl(0, 0%, 40%);
+}
+
+.dark .ckeditor-content-display table td,
+.dark .ckeditor-content-display table th {
+  border-color: hsl(0, 0%, 40%);
+}
+
+.dark .ckeditor-content-display table th {
+  background: hsla(0, 0%, 100%, 10%);
+}
+
+.dark .ckeditor-content-display .table table {
+  border-color: hsl(0, 0%, 40%);
+}
+
+.dark .ckeditor-content-display .table table td,
+.dark .ckeditor-content-display .table table th {
+  border-color: hsl(0, 0%, 40%);
+}
+
+.dark .ckeditor-content-display .table table th {
+  background: hsla(0, 0%, 100%, 10%);
+}
+
+.dark .ckeditor-content-display blockquote {
+  border-left-color: hsl(0, 0%, 40%);
+}
+
+.dark .ckeditor-content-display code {
+  background-color: hsla(0, 0%, 78%, 0.2);
+}
+
+.dark .ckeditor-content-display pre {
+  background: hsla(0, 0%, 78%, 0.2);
+  border-color: hsl(0, 0%, 40%);
+  color: hsl(0, 0%, 80%);
+}
+
+.dark .ckeditor-content-display a {
+  color: #4d9fff;
+}
+
+.dark .ckeditor-content-display hr {
+  background: hsl(0, 0%, 40%);
+}

@@ -1,0 +1,12 @@
+<svg width="300" height="200" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- define a vector shape -->
+  <defs>
+    <clipPath id="myClip">
+      <!-- तलको shape लाई आफ्नो shape/path सँग बदल -->
+      <path d="M10,10 h280 a20,20 0 0 1 20,20 v120 a20,20 0 0 1 -20,20 h-280 a20,20 0 0 1 -20,-20 v-120 a20,20 0 0 1 20,-20 z" />
+    </clipPath>
+  </defs>
+
+  <!-- image लाई clipPath apply गर -->
+  <image href="photo.jpg" x="0" y="0" width="300" height="200" clip-path="url(#myClip)" preserveAspectRatio="xMidYMid slice" />
+</svg>
