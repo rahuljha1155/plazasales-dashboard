@@ -10,6 +10,7 @@ export interface ITechnology {
     bannerUrls: string[];
     bannerGallery?: IBannerGallery[];
     coverImage: string;
+    sortOrder: number;
     createdAt: string;
     updatedAt: string;
     deletedAt?: string | null;
