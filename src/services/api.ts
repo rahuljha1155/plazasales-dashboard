@@ -1,15 +1,21 @@
 import axios from "axios";
 
-// const API_BASE_URL = "https://app.plazasales.com.np/api/v1/plaza";
-// const API2_BASE_URL = "https://app.plazasales.com.np/api/v1/plaza";
+//for production
+const API_BASE_URL =
+  import.meta.env.VITE_BACKEND_URL ||
+  "https://app.plazasales.com.np/api/v1/plaza";
+const API2_BASE_URL =
+  import.meta.env.VITE_BACKEND_URL ||
+  "https://app.plazasales.com.np/api/v1/plaza";
 
-const API_BASE_URL = "/api";
-const API2_BASE_URL = "/api";
+//for development
+// const API_BASE_URL = "/api";
+// const API2_BASE_URL = "/api";
 
 let recaptchaTokenGetter: (() => Promise<string | null>) | null = null;
 
 export const setRecaptchaTokenGetter = (
-  getter: () => Promise<string | null>
+  getter: () => Promise<string | null>,
 ) => {
   recaptchaTokenGetter = getter;
 };
@@ -25,8 +31,7 @@ async function injectRecaptchaToken(config: any) {
     if (token) {
       config.headers["X-Recaptcha-Token"] = token;
     }
-  } catch (err) {
-  }
+  } catch (err) {}
 
   if (config.data instanceof FormData) {
     delete config.headers["Content-Type"];
@@ -81,7 +86,7 @@ api.interceptors.response.use(
       window.location.href = "/login";
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export const api2 = axios.create({
@@ -127,7 +132,7 @@ api2.interceptors.response.use(
       window.location.href = "/login";
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;

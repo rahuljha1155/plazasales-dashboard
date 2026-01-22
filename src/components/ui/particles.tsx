@@ -20,10 +20,7 @@ interface ComponentProps {
   className?: string;
 }
 
-
 const defaultColors: string[] = ["#7CFC00"];
-
-
 
 const hexToRgb = (hex: string): [number, number, number] => {
   hex = hex.replace(/^#/, "");
@@ -117,8 +114,9 @@ const fragmentShader = /* glsl */ `
   }
 `;
 
-
-const API_BASE = "https://plaza-api.webxnepal.com/api/v1/plaza";
+const API_BASE =
+  import.meta.env.VITE_BACKEND_URL ||
+  "https://app.plazasales.com.np/api/v1/plaza";
 
 const resolveSocketUrl = () => {
   const envUrl = import.meta.env.VITE_SOCKET_URL?.trim();
@@ -139,7 +137,7 @@ const resolveSocketTransports = (): ("polling" | "websocket")[] => {
       .map((s: string) => s.trim())
       .filter(
         (s: string): s is "polling" | "websocket" =>
-          s === "polling" || s === "websocket"
+          s === "polling" || s === "websocket",
       );
     if (parsed.length) return parsed;
   }
@@ -172,7 +170,6 @@ export const Component: FC<ComponentProps> = ({
   const [isPresenceConnected, setIsPresenceConnected] = useState(false);
   const [liveSockets, setLiveSockets] = useState<number | null>(null);
 
-
   useEffect(() => {
     const socketUrl = resolveSocketUrl();
     const transports = resolveSocketTransports();
@@ -190,7 +187,6 @@ export const Component: FC<ComponentProps> = ({
       totalUnique?: number;
       totalSockets?: number;
     }) => {
-
       const unique =
         typeof payload?.totalUnique === "number"
           ? payload.totalUnique
@@ -225,8 +221,6 @@ export const Component: FC<ComponentProps> = ({
       socket.disconnect();
     };
   }, []);
-
-
 
   useEffect(() => {
     const container = containerRef.current;
@@ -293,7 +287,7 @@ export const Component: FC<ComponentProps> = ({
       positions.set([x * r, y * r, z * r], i * 3);
       randoms.set(
         [Math.random(), Math.random(), Math.random(), Math.random()],
-        i * 4
+        i * 4,
       );
       const col = hexToRgb(palette[Math.floor(Math.random() * palette.length)]);
       colors.set(col, i * 3);
@@ -419,7 +413,11 @@ export const Component: FC<ComponentProps> = ({
       <div
         ref={containerRef}
         className={`relative w-full z-[45] h-full overflow-hidden ${className || ""}`}
-        style={{ touchAction: "none", overflow: "hidden", position: "relative" }}
+        style={{
+          touchAction: "none",
+          overflow: "hidden",
+          position: "relative",
+        }}
       >
         <div className="absolute inset-0 h-full w-full z-5 bg-[linear-gradient(to_right,#0c270c_1px,transparent_1px),linear-gradient(to_bottom,#0c270c_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none"></div>
         <div className="absolute top-4 pointer-events-none right-4 z-50 bg-black/50 flex  gap-4">
@@ -430,7 +428,8 @@ export const Component: FC<ComponentProps> = ({
           </div>
           <div className="flex border border-green-500 px-3 rounded-full py-1  items-center gap-2">
             <span className="text-green-400 font-semibold text-sm flex gap-2 items-center">
-              <span>Unique Users:</span> <span className="text-white">{onlineUsers}</span>
+              <span>Unique Users:</span>{" "}
+              <span className="text-white">{onlineUsers}</span>
             </span>
           </div>
         </div>

@@ -51,7 +51,4 @@ jobs:
             httpd -t
             systemctl reload httpd
 
-            echo "🧪 Health check..."
-            curl -I --max-time 15 "http://127.0.0.1/" -H "Host: system.plazasales.com.np" | head -n 1
-
             echo "✅ Done"
