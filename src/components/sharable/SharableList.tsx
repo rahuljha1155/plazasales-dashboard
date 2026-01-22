@@ -1,11 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api2 } from "@/services/api";
-import {
-    Card,
-    CardContent,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
     AlertDialog,
@@ -19,7 +15,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { useSelectedDataStore } from "@/store/selectedStore";
 import Breadcrumb from "../dashboard/Breadcumb";
 import { useUserStore } from "@/store/userStore";
 import { UserRole } from "@/components/LoginPage";
@@ -28,6 +23,23 @@ import { createSharableColumns } from "./SharableTableColumns";
 import SharableCreateModal from "./SharableCreateModal";
 import SharableEditModal from "./SharableEditModal";
 import SharableViewPage from "./SharableViewPage";
+import { SortableSharableRow } from "./SortableSharableRow";
+import { useRecaptcha } from "@/hooks/useRecaptcha";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 
 type EntityType = "product" | "brand" | "category" | "subcategory";
 
@@ -64,16 +76,24 @@ export default function SharableList({ entityType, entityId, entityName }: Shara
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { user } = useUserStore();
-    const { selectedBrand, selectedCategory, selectedSubcategory, selectedProduct } = useSelectedDataStore();
+    const { getRecaptchaToken } = useRecaptcha();
 
     const [deleteIds, setDeleteIds] = useState<string[]>([]);
     const [selectedRows, setSelectedRows] = useState<ISharable[]>([]);
     const [viewMode, setViewMode] = useState<ViewMode>("list");
     const [selectedSharable, setSelectedSharable] = useState<ISharable | null>(null);
+    const [sharables, setSharables] = useState<ISharable[]>([]);
     const [pagination, setPagination] = useState({
         page: 1,
         limit: 10,
     });
+
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
 
     const { data, isLoading } = useQuery({
         queryKey: ["getSharables", entityId],
@@ -96,23 +116,31 @@ export default function SharableList({ entityType, entityId, entityName }: Shara
         },
     });
 
-    const sharables = Array.isArray(data?.shareables) ? data.shareables : [];
+    // Update local sharables state when data changes
+    useEffect(() => {
+        if (data?.shareables) {
+            const sortedSharables = [...data.shareables].sort((a, b) => a.sortOrder - b.sortOrder);
+            setSharables(sortedSharables);
+        }
+    }, [data]);
 
     const handleDelete = async () => {
         if (deleteIds.length === 0) return;
 
         try {
-            if (user?.role === UserRole.SUDOADMIN) {
-                // Permanently delete for SUDOADMIN
-                await api2.delete(`/shareable/destroy-shareables/${deleteIds.join(",")}`);
-                toast.success("Sharable permanently deleted");
-            } else {
-                // Soft delete for regular users
-                await api2.delete(`/shareable/delete-shareable/${deleteIds.join(",")}`);
-                toast.success("Sharable deleted successfully");
-            }
+            // Soft delete for all users
+            await api2.delete(`/shareable/delete-shareable/${deleteIds.join(",")}`);
+            toast.success("Sharable deleted successfully");
+            
             setDeleteIds([]);
             setSelectedRows([]);
+            
+            // If we're in view mode and deleted the current item, go back to list
+            if (viewMode === "view" && selectedSharable && deleteIds.includes(selectedSharable.id)) {
+                setViewMode("list");
+                setSelectedSharable(null);
+            }
+            
             queryClient.invalidateQueries({ queryKey: ["getSharables", entityId] });
             queryClient.invalidateQueries({ queryKey: ["getDeletedSharables", entityId] });
         } catch (error: any) {
@@ -143,12 +171,71 @@ export default function SharableList({ entityType, entityId, entityName }: Shara
         queryClient.invalidateQueries({ queryKey: ["getSharables", entityId] });
     };
 
+    const handleDragEnd = async (event: DragEndEvent) => {
+        const { active, over } = event;
+
+        if (!over || active.id === over.id) {
+            return;
+        }
+
+        const oldIndex = sharables.findIndex((sharable) => sharable.id === active.id);
+        const newIndex = sharables.findIndex((sharable) => sharable.id === over.id);
+
+        const newSharables = arrayMove(sharables, oldIndex, newIndex);
+        
+        // Update the sortOrder property for all items in the new array
+        const updatedSharables = newSharables.map((sharable, index) => ({
+            ...sharable,
+            sortOrder: index + 1
+        }));
+        
+        // Optimistically update the UI with new sort orders
+        setSharables(updatedSharables);
+
+        // Update sort order on the server with explicit reCAPTCHA token
+        try {
+            // Update all items with their new sort orders sequentially
+            for (let i = 0; i < updatedSharables.length; i++) {
+                const sharable = updatedSharables[i];
+                const originalSharable = sharables.find(s => s.id === sharable.id);
+                
+                // Only update if sort order actually changed
+                if (originalSharable && originalSharable.sortOrder !== sharable.sortOrder) {
+                    // Get a fresh token for each request
+                    const recaptchaToken = await getRecaptchaToken('update_sort_order');
+                    
+                    if (!recaptchaToken) {
+                        toast.error("Failed to verify reCAPTCHA");
+                        setSharables(sharables); // Revert on error
+                        return;
+                    }
+
+                    await api2.put(
+                        `/shareable/update-shareable/${sharable.id}`,
+                        { sortOrder: sharable.sortOrder },
+                        {
+                            headers: {
+                                'X-Recaptcha-Token': recaptchaToken
+                            }
+                        }
+                    );
+                }
+            }
+            
+            toast.success("Sharable order updated successfully");
+            
+            // Refetch to get the updated data from server
+            queryClient.invalidateQueries({ queryKey: ["getSharables", entityId] });
+        } catch (error: any) {
+            // Revert on error
+            setSharables(sharables);
+            toast.error(error?.response?.data?.message || "Failed to update sharable order");
+        }
+    };
+
     const breadcrumbLinks = [
-        { label: selectedBrand?.name || "Brands", href: "/dashboard/brands" },
-        { label: selectedCategory?.title || "Product Types", href: `/dashboard/category/${selectedBrand?.slug || ""}` },
-        { label: selectedSubcategory?.title || "Categories", href: `/dashboard/category/${selectedBrand?.slug || ""}/subcategory/${selectedCategory?.slug || ""}` },
-        { label: selectedProduct?.name || "Products", href: `/dashboard/category/${selectedBrand?.slug || ""}/subcategory/${selectedCategory?.slug || ""}/products/${selectedSubcategory?.slug || selectedSubcategory?.original?.slug || ""}` },
-        { label: "Sharables", isActive: true },
+        { label: "Sharables", href: "#" },
+        { label: "View All", isActive: true },
     ];
 
     const columns = createSharableColumns({
@@ -217,55 +304,72 @@ export default function SharableList({ entityType, entityId, entityName }: Shara
                         </div>
                     </div>
                 ) : (
-                    <DataTable
-                        columns={columns}
-                        data={tableData}
-                        onRowSelectionChange={setSelectedRows}
-                        filterColumn="title"
-                        filterPlaceholder="Filter sharables..."
-                        pagination={{
-                            itemsPerPage: pagination.limit,
-                            currentPage: pagination.page,
-                            totalItems: tableData.length,
-                            totalPages: Math.ceil(tableData.length / pagination.limit),
-                            onPageChange: (page) => {
-                                setPagination((prev) => ({ ...prev, page }));
-                            },
-                            onItemsPerPageChange: (itemsPerPage) => {
-                                setPagination({ page: 1, limit: itemsPerPage });
-                            },
-                            showItemsPerPage: true,
-                            showPageInput: true,
-                            showPageInfo: true,
-                        }}
-                        elements={
-                            <div className="flex justify-end items-center gap-2">
-                                {selectedRows.length > 0 && (
-                                    <Button
-                                        variant="destructive"
-                                        size="sm"
-                                        onClick={handleBulkDelete}
-                                    >
-                                        <Trash2 className="w-4 h-4 mr-2" />
-                                        Delete ({selectedRows.length})
-                                    </Button>
-                                )}
-                                {user?.role === UserRole.SUDOADMIN && (
-                                    <Button
-                                        variant="destructive"
-                                        onClick={() => navigate(`/dashboard/products/${entityId}/sharable/deleted`)}
-                                    >
-                                        <Trash2 className="w-4 h-4 mr-2" />
-                                        View Deleted
-                                    </Button>
-                                )}
-                                <Button onClick={() => setViewMode("create")}>
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    Add Sharable
-                                </Button>
-                            </div>
-                        }
-                    />
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                    >
+                        <SortableContext
+                            items={sharables.map((sharable) => sharable.id)}
+                            strategy={verticalListSortingStrategy}
+                        >
+                            <DataTable
+                                columns={columns}
+                                data={tableData}
+                                onRowSelectionChange={setSelectedRows}
+                                filterColumn="title"
+                                filterPlaceholder="Filter sharables..."
+                                DraggableRow={SortableSharableRow}
+                                pagination={{
+                                    itemsPerPage: pagination.limit,
+                                    currentPage: pagination.page,
+                                    totalItems: tableData.length,
+                                    totalPages: Math.ceil(tableData.length / pagination.limit),
+                                    onPageChange: (page) => {
+                                        setPagination((prev) => ({ ...prev, page }));
+                                    },
+                                    onItemsPerPageChange: (itemsPerPage) => {
+                                        setPagination({ page: 1, limit: itemsPerPage });
+                                    },
+                                    showItemsPerPage: true,
+                                    showPageInput: true,
+                                    showPageInfo: true,
+                                }}
+                                elements={
+                                    <div className="flex justify-end items-center gap-2">
+                                        {selectedRows.length > 0 && (
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
+                                                onClick={handleBulkDelete}
+                                            >
+                                                <Trash2 className="w-4 h-4 mr-2" />
+                                                Delete ({selectedRows.length})
+                                            </Button>
+                                        )}
+                                        {user?.role === UserRole.SUDOADMIN && (
+                                            <Button
+                                                variant="destructive"
+                                                onClick={() => {
+                                                    const path = entityId 
+                                                        ? `/dashboard/products/${entityId}/sharable/deleted`
+                                                        : `/dashboard/sharable/deleted`;
+                                                    navigate(path);
+                                                }}
+                                            >
+                                                <Trash2 className="w-4 h-4 mr-2" />
+                                                View Deleted
+                                            </Button>
+                                        )}
+                                        <Button onClick={() => setViewMode("create")}>
+                                            <Plus className="w-4 h-4 mr-2" />
+                                            Add Sharable
+                                        </Button>
+                                    </div>
+                                }
+                            />
+                        </SortableContext>
+                    </DndContext>
                 )}
             </div>
 
@@ -274,13 +378,10 @@ export default function SharableList({ entityType, entityId, entityName }: Shara
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>
-                            {user?.role === UserRole.SUDOADMIN ? "Permanently Delete?" : "Are you sure?"}
+                            Are you sure?
                         </AlertDialogTitle>
                         <AlertDialogDescription>
-                            {user?.role === UserRole.SUDOADMIN 
-                                ? `This action cannot be undone. This will permanently delete ${deleteIds.length} sharable(s) from the database.`
-                                : `This action will move ${deleteIds.length} sharable(s) to trash.`
-                            }
+                            This action will move {deleteIds.length} sharable(s) to trash.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -289,7 +390,7 @@ export default function SharableList({ entityType, entityId, entityName }: Shara
                             onClick={handleDelete}
                             className="bg-red-500 hover:bg-red-600"
                         >
-                            {user?.role === UserRole.SUDOADMIN ? "Delete Permanently" : "Delete"}
+                            Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

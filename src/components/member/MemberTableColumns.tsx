@@ -28,7 +28,6 @@ export const createMemberColumns = ({
           }
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all"
-          className="ml-2"
         />
       ),
       cell: ({ row }) => (

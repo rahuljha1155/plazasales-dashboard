@@ -32,3 +32,32 @@ export const useToggleSharableActive = () => {
     }
   });
 };
+
+const updateSharableSortOrder = async (sharableId: string, sortOrder: number) => {
+  const res = await api2.put(`/shareable/update-shareable/${sharableId}`, {
+    sortOrder
+  });
+  return res.data;
+};
+
+export const useUpdateSharableSortOrder = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationKey: ["updateSharableSortOrder"],
+    mutationFn: ({ sharableId, sortOrder }: { sharableId: string; sortOrder: number }) =>
+      updateSharableSortOrder(sharableId, sortOrder),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["getSharables"] });
+    },
+    onError: (error: any) => {
+      console.error("Sort order update error:", error);
+      const errorMessage = error.response?.data?.message || "Failed to update sharable order";
+      
+      // Don't show toast for recaptcha errors as the interceptor will retry
+      if (!errorMessage.toLowerCase().includes("recaptcha")) {
+        toast.error(errorMessage, { position: "bottom-right" });
+      }
+    }
+  });
+};

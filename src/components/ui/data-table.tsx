@@ -181,24 +181,30 @@ export function DataTable<TData extends { _id?: string; id?: string }, TValue, T
           </div>
         </div>
       </div>
-      <div className=" border bg-white overflow-hidden ">
+      <div className="border bg-white rounded-md overflow-hidden">
         <Table>
           <TableHeader className="">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} >
                 {DraggableRow && (
-                  <TableHead className="w-10  bg-zinc-50/70 p-2 px-1"></TableHead>
+                  <TableHead className="w-8 bg-zinc-50/70 p-1"></TableHead>
                 )}
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className="bg-zinc-50/70 p-2 px-2">
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                  </TableHead>
-                ))}
+                {headerGroup.headers.map((header) => {
+                  const isSelectOrDrag = header.id === 'select' || header.id === 'drag' || header.id === 'id';
+                  return (
+                    <TableHead 
+                      key={header.id} 
+                      className={`bg-zinc-50/70 p-2 ${isSelectOrDrag ? 'px-1' : 'px-3'}`}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                    </TableHead>
+                  );
+                })}
               </TableRow>
             ))}
           </TableHeader>
@@ -228,16 +234,21 @@ export function DataTable<TData extends { _id?: string; id?: string }, TValue, T
                       company={row.original}
 
                     >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell
-                          onClick={handleRowClick}
-                          key={cell.id} className="py-2 cursor-pointer ">
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </TableCell>
-                      ))}
+                      {row.getVisibleCells().map((cell) => {
+                        const isSelectOrDrag = cell.column.id === 'select' || cell.column.id === 'drag' || cell.column.id === 'id';
+                        return (
+                          <TableCell
+                            onClick={handleRowClick}
+                            key={cell.id} 
+                            className={`py-2 cursor-pointer ${isSelectOrDrag ? 'px-1' : 'px-3'}`}
+                          >
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )}
+                          </TableCell>
+                        );
+                      })}
                     </DraggableRow>
                   );
                 }
@@ -249,14 +260,20 @@ export function DataTable<TData extends { _id?: string; id?: string }, TValue, T
                     className={`hover:bg-zinc-50 ${onRowClick ? 'cursor-pointer' : ''} ${rowClass}`}
                     onClick={handleRowClick}
                   >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="py-2 cursor-pointer px-4">
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
+                    {row.getVisibleCells().map((cell) => {
+                      const isSelectOrDrag = cell.column.id === 'select' || cell.column.id === 'drag' || cell.column.id === 'id';
+                      return (
+                        <TableCell 
+                          key={cell.id} 
+                          className={`py-2 cursor-pointer ${isSelectOrDrag ? 'px-1' : 'px-3'}`}
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </TableCell>
+                      );
+                    })}
                   </TableRow>
                 );
               })

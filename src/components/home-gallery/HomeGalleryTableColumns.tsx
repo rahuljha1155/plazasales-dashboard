@@ -41,7 +41,7 @@ export const createGalleryColumns = ({
           }
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all"
-          className="ml-2"
+          className="ml-3"
         />
       ),
       cell: ({ row }) => (
@@ -49,6 +49,7 @@ export const createGalleryColumns = ({
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
           aria-label="Select row"
+          className="ml-3"
         />
       ),
       enableSorting: false,

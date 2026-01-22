@@ -161,6 +161,7 @@ export default function AdsList() {
                                         <TableRow>
                                             <TableHead className="w-12">
                                                 <Checkbox
+                                                    className="ml-3"
                                                     checked={selectedAds.length === ads.length && ads.length > 0}
                                                     onCheckedChange={handleSelectAll}
                                                 />
@@ -172,7 +173,7 @@ export default function AdsList() {
                                             <TableHead>Start Date</TableHead>
                                             <TableHead>End Date</TableHead>
                                             <TableHead>Sort Order</TableHead>
-                                            <TableHead className="text-right">Actions</TableHead>
+                                            <TableHead className="text-center pr-4">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -181,6 +182,7 @@ export default function AdsList() {
                                                 <TableRow className="cursor-pointer" onClick={() => navigate(`/dashboard/ads/view/${ad.id}`)} key={ad.id}>
                                                     <TableCell className="w-12">
                                                         <Checkbox
+                                                            className="ml-3"
                                                             checked={selectedAds.includes(ad.id)}
                                                             onCheckedChange={() => handleSelectAd(ad.id)}
                                                         />
@@ -214,7 +216,7 @@ export default function AdsList() {
                                                         {ad.endAt ? format(new Date(ad.endAt), "MMM dd, yyyy") : "-"}
                                                     </TableCell>
                                                     <TableCell>{ad.sortOrder}</TableCell>
-                                                    <TableCell className="text-right">
+                                                    <TableCell className="text-center pr-4">
                                                         <DropdownMenu >
                                                             <DropdownMenuTrigger asChild>
                                                                 <Button variant="ghost" size="icon">

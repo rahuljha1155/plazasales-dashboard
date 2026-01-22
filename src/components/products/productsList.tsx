@@ -137,33 +137,47 @@ export default function ProductsList() {
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
-
     if (!over || active.id === over.id) return;
 
     const oldIndex = products.findIndex((p) => p.id === active.id);
     const newIndex = products.findIndex((p) => p.id === over.id);
-
     if (oldIndex === -1 || newIndex === -1) return;
 
-    const newProducts = arrayMove(products, oldIndex, newIndex);
-    const targetProduct = products[newIndex];
+    const reordered = arrayMove(products, oldIndex, newIndex);
+    
+    // Update the sortOrder property for all items in the new array
+    const updatedProducts = reordered.map((product, index) => ({
+      ...product,
+      sortOrder: index + 1
+    }));
+    
+    // Optimistically update the UI with new sort orders
+    setProducts(updatedProducts);
 
-    // Optimistically update UI
-    setProducts(newProducts);
-
-    // Update sort order on server - send the target position's sortOrder
     try {
-      await updateSortOrderMutation.mutateAsync({
-        productId: active.id as string,
-        sortOrder: targetProduct.sortOrder || newIndex + 1,
-      });
+      // Update all items with their new sort orders sequentially
+      for (let i = 0; i < updatedProducts.length; i++) {
+        const product = updatedProducts[i];
+        const originalProduct = products.find(p => p.id === product.id);
+        
+        // Only update if sort order actually changed
+        if (originalProduct && originalProduct.sortOrder !== product.sortOrder) {
+          await updateSortOrderMutation.mutateAsync({
+            productId: product.id,
+            sortOrder: product.sortOrder,
+          });
+        }
+      }
+      
       toast.success("Product order updated successfully");
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Failed to update product order");
-      // Revert on error
+      // Rollback on error
       if (data?.data?.products) {
         setProducts(data.data.products);
       }
+      toast.error(error?.response?.data?.message || "Failed to update order", {
+        description: error?.response?.data?.message || "Something went wrong"
+      });
     }
   };
 

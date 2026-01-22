@@ -40,7 +40,7 @@ export const createSeoColumns = ({
           }
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all"
-          className="translate-y-[2px] ml-2"
+          className="translate-y-[2px] ml-3"
         />
       ),
       cell: ({ row }) => (
@@ -48,7 +48,7 @@ export const createSeoColumns = ({
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
           aria-label="Select row"
-          className="translate-y-[2px]"
+          className="translate-y-[2px] ml-3"
         />
       ),
       enableSorting: false,

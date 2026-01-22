@@ -16,6 +16,7 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 import { useEffect, useState } from "react";
 import api from "@/services/api";
 import { toast } from "sonner";
+import { UserRole } from "@/components/LoginPage";
 
 interface UserMenuProps {
   isLogingOut: boolean;
@@ -49,6 +50,15 @@ export default function UserMenu({ isLogingOut, handleLogout }: UserMenuProps) {
 
     fetchUserDetails();
   }, [storeUser?.id, storeUser?._id]);
+
+  // Determine avatar image based on user role
+  const getAvatarImage = () => {
+    if (user?.role === UserRole.SUDOADMIN || user?.role === UserRole.ADMIN) {
+      return "/logo/admin.png";
+    }
+    return user?.profilePicture || "/avatar/avatar2.png";
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -58,8 +68,8 @@ export default function UserMenu({ isLogingOut, handleLogout }: UserMenuProps) {
           className="relative h-9 w-9  rounded-full cursor-pointer border border-transparent hover:border-orange-500"
         >
           <img
-            src={user?.profilePicture as string}
-            alt={user?.profilePicture}
+            src={getAvatarImage()}
+            alt="User Avatar"
             className="h-full w-full rounded-full object-cover"
           />
         </Button>

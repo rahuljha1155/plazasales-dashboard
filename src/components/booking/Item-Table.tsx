@@ -141,6 +141,7 @@ export function ItemTable({ pkgs, isLoading }: TableProps) {
       id: "select",
       header: ({ table }) => (
         <Checkbox
+          className="ml-3"
           checked={
             table.getIsAllPageRowsSelected() ||
             (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -151,6 +152,7 @@ export function ItemTable({ pkgs, isLoading }: TableProps) {
       ),
       cell: ({ row }) => (
         <Checkbox
+          className="ml-3"
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
           aria-label="Select row"

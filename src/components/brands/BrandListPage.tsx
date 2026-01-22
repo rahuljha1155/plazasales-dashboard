@@ -121,15 +121,37 @@ export default function BrandListPage() {
         const newIndex = brands.findIndex((brand) => brand.id === over.id);
 
         const newBrands = arrayMove(brands, oldIndex, newIndex);
-        setBrands(newBrands);
+        
+        // Update the sortOrder property for all items in the new array
+        const updatedBrands = newBrands.map((brand, index) => ({
+            ...brand,
+            sortOrder: index + 1
+        }));
+        
+        // Optimistically update the UI with new sort orders
+        setBrands(updatedBrands);
 
         try {
-            await updateSortOrder({
-                brandId: active.id as string,
-                sortOrder: newIndex + 1,
-            });
+            // Update all items with their new sort orders sequentially
+            for (let i = 0; i < updatedBrands.length; i++) {
+                const brand = updatedBrands[i];
+                const originalBrand = brands.find(b => b.id === brand.id);
+                
+                // Only update if sort order actually changed
+                if (originalBrand && originalBrand.sortOrder !== brand.sortOrder) {
+                    await updateSortOrder({
+                        brandId: brand.id,
+                        sortOrder: brand.sortOrder,
+                    });
+                }
+            }
+            
             toast.success("Brand order updated successfully");
+            
+            // Refetch to get the updated data from server
+            queryClient.invalidateQueries({ queryKey: ["getBrands"] });
         } catch (error: any) {
+            // Revert on error
             setBrands(brands);
             toast.error(error?.response?.data?.message || "Failed to update brand order");
         }

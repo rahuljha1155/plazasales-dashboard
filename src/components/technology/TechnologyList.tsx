@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@iconify/react/dist/iconify.js";
@@ -20,6 +20,24 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Breadcrumb from "@/components/dashboard/Breadcumb";
 import { Checkbox } from "../ui/checkbox";
 import { useUserStore } from "@/store/userStore";
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { SortableTechnologyRow } from "./SortableTechnologyRow";
+import { api2 } from "@/services/api";
+import { toast } from "sonner";
 
 export default function TechnologyList() {
     const navigate = useNavigate();
@@ -28,12 +46,66 @@ export default function TechnologyList() {
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [selectedRows, setSelectedRows] = useState<any[]>([]);
     const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
+    const [technologies, setTechnologies] = useState<ITechnology[]>([]);
 
-    const { data, isLoading } = useGetTechnologies(page, limit);
+    const { data, isLoading, refetch } = useGetTechnologies(page, limit);
     const { mutateAsync: deleteBulkTechnologies, isPending: isBulkDeleting } = useDeleteBulkTechnologies();
     const deleteMutation = useDeleteTechnology();
 
-    const { user } = useUserStore()
+    const { user } = useUserStore();
+
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    useEffect(() => {
+        if (data?.data?.technologies) {
+            const sortedTechnologies = [...data.data.technologies].sort((a, b) => a.sortOrder - b.sortOrder);
+            setTechnologies(sortedTechnologies);
+        }
+    }, [data]);
+
+    const handleDragEnd = async (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+
+        const oldIndex = technologies.findIndex((tech) => tech.id === active.id);
+        const newIndex = technologies.findIndex((tech) => tech.id === over.id);
+        if (oldIndex === -1 || newIndex === -1) return;
+
+        const reordered = arrayMove(technologies, oldIndex, newIndex);
+        
+        const updatedTechnologies = reordered.map((technology, index) => ({
+            ...technology,
+            sortOrder: index + 1
+        }));
+        
+        setTechnologies(updatedTechnologies);
+
+        try {
+            for (let i = 0; i < updatedTechnologies.length; i++) {
+                const technology = updatedTechnologies[i];
+                const originalTechnology = technologies.find(t => t.id === technology.id);
+                
+                if (originalTechnology && originalTechnology.sortOrder !== technology.sortOrder) {
+                    await api2.put(`/technology/update-technology/${technology.id}`, {
+                        sortOrder: technology.sortOrder,
+                    });
+                }
+            }
+            
+            toast.success("Technology order updated successfully");
+            refetch();
+        } catch (e: any) {
+            setTechnologies(technologies);
+            toast.error(e?.response?.data?.message || "Failed to update order", {
+                description: e?.response?.data?.message || "Something went wrong"
+            });
+        }
+    };
 
     const handleBulkDelete = async () => {
         try {
@@ -64,7 +136,6 @@ export default function TechnologyList() {
                     }
                     onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
                     aria-label="Select all"
-                    className="ml-2"
                 />
             ),
             cell: ({ row }) => (
@@ -74,6 +145,13 @@ export default function TechnologyList() {
                     aria-label="Select row"
                 />
             ),
+            enableSorting: false,
+            enableHiding: false,
+        },
+        {
+            id: "drag",
+            header: () => <div className="w-2"></div>,
+            cell: () => <div></div>,
             enableSorting: false,
             enableHiding: false,
         },
@@ -91,16 +169,26 @@ export default function TechnologyList() {
                 <img
                     src={row.original.coverImage}
                     alt={row.original.title}
-                    className="size-14 object-cover rounded"
+                    className="h-12 w-12 object-cover rounded"
                 />
             ),
         },
         {
             accessorKey: "title",
             header: "Title",
-            cell: ({ row }) => <div className="w-[15rem]">
+            cell: ({ row }) => <div className="max-w-[15rem] truncate">
                 {row?.original?.title}
             </div>
+        },
+        {
+            accessorKey: "description",
+            header: "Description",
+            cell: ({ row }) => (
+                <div 
+                    className="max-w-[20rem] line-clamp-2 text-sm text-muted-foreground"
+                    dangerouslySetInnerHTML={{ __html: row?.original?.description || 'N/A' }}
+                />
+            ),
         },
 
         {
@@ -110,33 +198,36 @@ export default function TechnologyList() {
         },
         {
             id: "actions",
-            header: "Actions",
+            header: () => <div className="text-center font-semibold text-gray-700">Actions</div>,
             cell: ({ row }) => (
-                <div className="flex -mx-4 ">
+                <div className="flex gap-1 justify-center items-center">
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => navigate(`/dashboard/technology/view/${row.original.id}`)}
-                        className="hover:bg-transparent text-zinc-400 hover:text-blue-600 cursor-pointer"
+                        className="h-8 w-8 hover:bg-blue-50"
+                        title="View Details"
                     >
-                        <Icon icon="mdi:eye" width="16" height="16" />
+                        <Icon icon="mdi:eye" className="h-4 w-4 text-zinc-300 hover:text-zinc-800" />
                     </Button>
 
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => navigate(`/dashboard/technology/edit/${row.original.id}`)}
-                        className="hover:bg-transparent text-zinc-400 hover:text-orange-600 cursor-pointer"
+                        className="h-8 w-8 hover:bg-green-50"
+                        title="Edit Technology"
                     >
-                        <Icon icon="mynaui:edit-one" width="16" height="16" />
+                        <Icon icon="mdi:pencil" className="h-4 w-4 text-zinc-300 hover:text-zinc-800" />
                     </Button>
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => setDeleteId(row.original.id)}
-                        className="hover:bg-transparent text-zinc-400 hover:text-red-500 cursor-pointer"
+                        className="h-8 w-8 hover:bg-red-50"
+                        title="Delete Technology"
                     >
-                        <Icon icon="ic:baseline-delete" width="16" height="16" />
+                        <Icon icon="mdi:delete" className="h-4 w-4 text-zinc-300 hover:text-red-500" />
                     </Button>
 
                 </div>
@@ -165,52 +256,64 @@ export default function TechnologyList() {
 
             </div>
 
-            <DataTable
-                columns={columns}
-                data={data?.data?.technologies || []}
-                onRowClick={(row) => {
-                    navigate(`/dashboard/technology/view/${row.id}`);
-                }}
-                onRowSelectionChange={(rows: any) => setSelectedRows(rows)}
-                elements={
-                    <div className="flex gap-2">
-                        {selectedRows.length > 0 && (
-                            <Button
-                                variant="destructive"
-                                className="rounded-sm hover:shadow-md transition-shadow"
-                                onClick={() => setShowBulkDeleteDialog(true)}
-                            >
-                                <Icon icon="solar:trash-bin-minimalistic-bold" className="mr-2" width="20" />
-                                delete ({selectedRows.length})
-                            </Button>
-                        )}
-                        <div className="flex gap-2">
-                            {
-                                user?.role === "SUDOADMIN" && (
+            <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+            >
+                <SortableContext
+                    items={technologies.map((tech) => tech.id)}
+                    strategy={verticalListSortingStrategy}
+                >
+                    <DataTable
+                        columns={columns}
+                        data={technologies}
+                        DraggableRow={SortableTechnologyRow}
+                        onRowClick={(row) => {
+                            navigate(`/dashboard/technology/view/${row.id}`);
+                        }}
+                        onRowSelectionChange={(rows: any) => setSelectedRows(rows)}
+                        elements={
+                            <div className="flex gap-2">
+                                {selectedRows.length > 0 && (
                                     <Button
                                         variant="destructive"
-                                        onClick={() => navigate("/dashboard/technology/deleted")}
+                                        className="rounded-sm hover:shadow-md transition-shadow"
+                                        onClick={() => setShowBulkDeleteDialog(true)}
                                     >
                                         <Icon icon="solar:trash-bin-minimalistic-bold" className="mr-2" width="20" />
-                                        View Deleted
+                                        delete ({selectedRows.length})
                                     </Button>
-                                )
-                            }
-                            <Button className="rounded-md" onClick={() => navigate("/dashboard/technology/create")}>
-                                <Icon icon="solar:add-circle-linear" className="w-4 h-4 mr-2" />
-                                New Technology
-                            </Button>
-                        </div>
-                    </div>
-                }
-                pagination={{
-                    currentPage: page,
-                    totalPages: data?.data?.totalPages || 0,
-                    totalItems: data?.data?.total || 0,
-                    itemsPerPage: limit,
-                    onPageChange: (newPage) => setPage(newPage),
-                }}
-            />
+                                )}
+                                <div className="flex gap-2">
+                                    {
+                                        user?.role === "SUDOADMIN" && (
+                                            <Button
+                                                variant="destructive"
+                                                onClick={() => navigate("/dashboard/technology/deleted")}
+                                            >
+                                                <Icon icon="solar:trash-bin-minimalistic-bold" className="mr-2" width="20" />
+                                                View Deleted
+                                            </Button>
+                                        )
+                                    }
+                                    <Button className="rounded-md" onClick={() => navigate("/dashboard/technology/create")}>
+                                        <Icon icon="solar:add-circle-linear" className="w-4 h-4 mr-2" />
+                                        New Technology
+                                    </Button>
+                                </div>
+                            </div>
+                        }
+                        pagination={{
+                            currentPage: page,
+                            totalPages: data?.data?.totalPages || 0,
+                            totalItems: data?.data?.total || 0,
+                            itemsPerPage: limit,
+                            onPageChange: (newPage) => setPage(newPage),
+                        }}
+                    />
+                </SortableContext>
+            </DndContext>
 
             <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
                 <AlertDialogContent>

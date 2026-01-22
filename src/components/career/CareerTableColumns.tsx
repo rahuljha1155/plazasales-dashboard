@@ -25,7 +25,7 @@ export const careerTableColumns: ColumnDef<ICareer>[] = [
         }
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
         aria-label="Select all"
-        className="ml-2"
+        className="ml-3"
       />
     ),
     cell: ({ row }) => (
@@ -33,17 +33,16 @@ export const careerTableColumns: ColumnDef<ICareer>[] = [
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Select row"
+        className="ml-3"
       />
     ),
     enableSorting: false,
     enableHiding: false,
-    size: 40,
   },
   {
     accessorKey: "sn",
     header: ({ column }) => <DataTableColumnHeader column={column} title="S.N" />,
     cell: ({ row }) => row.index + 1,
-    size: 40,
     enableSorting: false,
   },
   {

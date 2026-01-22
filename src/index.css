@@ -114,6 +114,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -129,7 +130,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
     -primary: #44b8f3;
-      -primary-foreground: 210 40% 98%;
+    -primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
@@ -155,6 +156,7 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -301,10 +303,12 @@
   font-weight: normal;
 
 }
-.sidebar-font{
+
+.sidebar-font {
   font-family: interfont;
 }
-.button-bgcolor{
+
+.button-bgcolor {
   background-color: blue;
 }
 
@@ -316,26 +320,32 @@
   list-style-type: disc;
   padding-left: 1.25rem;
 }
+
 .prose ol {
   list-style-type: decimal;
   padding-left: 1.25rem;
 }
-  .ProseMirror {
-      border: none;
-     min-height: 400px;
-     max-height: 500px;
-     padding: 12px;
-     overflow:hidden
 
+.ProseMirror {
+  border: none;
+  min-height: 400px;
+  max-height: 500px;
+  padding: 12px;
+  overflow: hidden
+}
 
-   }
 @media print {
   body * {
-    visibility: hidden; /* hide everything */
+    visibility: hidden;
+    /* hide everything */
   }
-  .printable, .printable * {
-    visibility: visible; /* only show invoice content */
+
+  .printable,
+  .printable * {
+    visibility: visible;
+    /* only show invoice content */
   }
+
   .printable {
     position: absolute;
     left: 0;
@@ -356,6 +366,7 @@
   -ms-overflow-style: none;
   /* Internet Explorer 10+ */
 }
+
 .editor td {
   @apply border p-2 px-4
 }

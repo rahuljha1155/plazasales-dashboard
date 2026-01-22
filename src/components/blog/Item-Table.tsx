@@ -85,7 +85,7 @@ export function BlogTable({
       id: "select",
       header: ({ table }) => (
         <Checkbox
-          className="ml-2"
+          className="ml-3"
           checked={
             table.getIsAllPageRowsSelected() ||
             (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -96,6 +96,7 @@ export function BlogTable({
       ),
       cell: ({ row }) => (
         <Checkbox
+          className="ml-3"
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
           aria-label="Select row"
@@ -135,6 +136,23 @@ export function BlogTable({
       ),
       cell: ({ row }) => (
         <div className="font-medium line-clamp-1">{row.getValue("title")}</div>
+      ),
+    },
+    {
+      accessorKey: "createdAt",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Created At
+          <CaretSortIcon className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => (
+        <div className="text-sm text-gray-600">
+          {new Date(row.original.createdAt).toLocaleDateString()}
+        </div>
       ),
     },
 

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/services/api";
 import { toast } from "sonner";
 import ChangePasswordDialog from "./ChangePasswordDialog";
+import { UserRole } from "@/components/LoginPage";
 
 export default function ProfileStatsCard() {
   const { user: storeUser } = useUserStore.getState().getInfo();
@@ -38,7 +39,15 @@ export default function ProfileStatsCard() {
 
   if (!user) return null;
 
-  const image = user.profilePicture || "/avatar/avatar2.png";
+  // Determine avatar image based on user role
+  const getAvatarImage = () => {
+    if (user?.role === UserRole.SUDOADMIN || user?.role === UserRole.ADMIN) {
+      return "/logo/admin.png";
+    }
+    return user?.profilePicture || "/avatar/avatar2.png";
+  };
+
+  const image = getAvatarImage();
   const fullName = user.name || `${user.firstname || ""} ${user.middlename ? user.middlename + " " : ""}${user.lastname || ""}`.trim() || "Anonymous User";
 
   if (isLoading) {

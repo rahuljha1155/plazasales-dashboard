@@ -61,7 +61,7 @@ export function UserTable({ users, isLoading, pagination, onPageChange, onViewUs
       id: "select",
       header: ({ table }) => (
         <Checkbox
-          className="ml-2"
+          className="ml-3"
           checked={
             table.getIsAllPageRowsSelected() ||
             (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -72,6 +72,7 @@ export function UserTable({ users, isLoading, pagination, onPageChange, onViewUs
       ),
       cell: ({ row }) => (
         <Checkbox
+          className="ml-3"
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
           aria-label="Select row"

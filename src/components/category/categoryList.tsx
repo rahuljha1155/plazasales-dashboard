@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import {
   DndContext,
-  closestCorners,
+  closestCenter,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -10,7 +10,9 @@ import {
 } from "@dnd-kit/core";
 import {
   arrayMove,
+  SortableContext,
   sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { type ColumnDef } from "@tanstack/react-table";
 import {
@@ -21,6 +23,7 @@ import {
   Search,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Link, useParams, useNavigate, href } from "react-router-dom";
 import { toast } from "sonner";
 import { CaretSortIcon } from "@radix-ui/react-icons";
@@ -55,6 +58,8 @@ import { useGetBrandBySlug } from "@/services/brand";
 import { useUserStore } from "@/store/userStore";
 import { UserRole } from "@/components/LoginPage";
 import { useSelectedDataStore } from "@/store/selectedStore";
+import { SortableCategoryRow } from "./SortableCategoryRow";
+import { useRecaptcha } from "@/hooks/useRecaptcha";
 
 type ViewMode = "view" | "create" | "edit";
 
@@ -64,6 +69,7 @@ export default function SubCategoryPage() {
   const brandSlug = params?.id; // This is actually the brand slug from URL
   const navigate = useNavigate();
   const { user } = useUserStore();
+  const { getRecaptchaToken } = useRecaptcha();
   const isSudoAdmin = user?.role === UserRole.SUDOADMIN;
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -94,40 +100,61 @@ export default function SubCategoryPage() {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const oldIndex = categories.findIndex((i) => i.categoryId === active.id);
-    const newIndex = categories.findIndex((i) => i.categoryId === over.id);
+    const oldIndex = categories.findIndex((i) => (i.id || i.categoryId) === active.id);
+    const newIndex = categories.findIndex((i) => (i.id || i.categoryId) === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
 
     const reordered = arrayMove(categories, oldIndex, newIndex);
-    setCategories(reordered);
+    
+    // Update the sortOrder property for all items in the new array
+    const updatedCategories = reordered.map((category, index) => ({
+      ...category,
+      sortOrder: index + 1
+    }));
+    
+    // Optimistically update the UI with new sort orders
+    setCategories(updatedCategories);
 
     try {
-      await updateCategoryOrder(
-        categories[oldIndex].categoryId,
-        categories[newIndex].categoryId
-      );
-      toast.success("Sub Category sortOrder updated successfully");
+      // Update all items with their new sort orders sequentially
+      for (let i = 0; i < updatedCategories.length; i++) {
+        const category = updatedCategories[i];
+        const originalCategory = categories.find(c => (c.id || c.categoryId) === (category.id || category.categoryId));
+        
+        // Only update if sort order actually changed
+        if (originalCategory && originalCategory.sortOrder !== category.sortOrder) {
+          // Get a fresh token for each request
+          const recaptchaToken = await getRecaptchaToken('update_sort_order');
+          
+          if (!recaptchaToken) {
+            toast.error("Failed to verify reCAPTCHA");
+            setCategories(categories); // Revert on error
+            return;
+          }
+
+          await api.put(`/category/update-category/${category.id || category.categoryId}`, {
+            sortOrder: category.sortOrder,
+          }, {
+            headers: {
+              'X-Recaptcha-Token': recaptchaToken
+            }
+          });
+        }
+      }
+      
+      toast.success("Category order updated successfully");
+      
+      // Refetch to get the updated data from server
+      // Note: You might need to add queryClient if not already imported
     } catch (e: any) {
+      // Rollback on error
+      setCategories(categories);
       toast.error(e?.response?.data?.message || "Failed to update order",
         {
           description: e?.response?.data?.message || "Something went wrong"
         }
       );
-      setCategories(categories); // rollback
     }
-
-
-  };
-
-  const updateCategoryOrder = async (
-    draggedCategoryId: string,
-    targetCategoryId: string
-  ) => {
-    return api.put(`/categories/reorder`, {
-      draggedCategoryId,
-      targetCategoryId,
-      brandId: params.id,
-    });
   };
 
   useEffect(() => {
@@ -181,7 +208,6 @@ export default function SubCategoryPage() {
             (table.getIsSomePageRowsSelected() && "indeterminate")
           }
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          className="ml-2"
         />
       ),
       cell: ({ row }) => (
@@ -194,10 +220,34 @@ export default function SubCategoryPage() {
       enableHiding: false,
     },
     {
+      id: "drag",
+      header: () => <div className="w-4"></div>,
+      cell: () => <div></div>, // Empty cell since drag handle is in SortableCategoryRow
+      enableSorting: false,
+      enableHiding: false,
+      size: 20,
+    },
+    {
       accessorKey: "sortOrder",
       header: () => <div className="font-medium">S.N.</div>,
       cell: ({ row }) => (
         <div className="text-foreground">{row.index + 1}</div>
+      ),
+    },
+    {
+      accessorKey: "coverImage",
+      header: () => <div className="font-medium">Image</div>,
+      cell: ({ row }) => (
+        <Avatar className="bg-gray-100 h-10 w-10 flex-shrink-0">
+          <AvatarImage
+            src={row.original.coverImage}
+            alt={row.getValue("title")}
+            className="object-cover"
+          />
+          <AvatarFallback className="bg-gray-100 text-foreground/65 text-xs">
+            {row.original.title?.substring(0, 2).toUpperCase() || "NA"}
+          </AvatarFallback>
+        </Avatar>
       ),
     },
     {
@@ -210,7 +260,9 @@ export default function SubCategoryPage() {
           Name <CaretSortIcon className="ml-2 h-4 w-4" />
         </Button>
       ),
-      cell: ({ row }) => <div className="font-medium max-w-xl line-clamp-1">{row.getValue("title")}</div>,
+      cell: ({ row }) => (
+        <div className="font-medium max-w-xl line-clamp-1">{row.getValue("title")}</div>
+      ),
     },
     {
       accessorKey: "slug",
@@ -414,103 +466,109 @@ export default function SubCategoryPage() {
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
     >
-      <div className="w-full space-y-6">
-        <div className="flex justify-between items-center  pb-4">
-          <Breadcumb links={getBreadcrumbLinks()} />
+      <SortableContext
+        items={categories.map((cat) => cat.id || cat.categoryId)}
+        strategy={verticalListSortingStrategy}
+      >
+        <div className="w-full space-y-6">
+          <div className="flex justify-between items-center  pb-4">
+            <Breadcumb links={getBreadcrumbLinks()} />
 
-        </div>
+          </div>
 
-        <div className="space-y-4">
-          {isLoading ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Skeleton className="h-10 w-[300px]" />
-                <Skeleton className="h-10 w-[100px]" />
-              </div>
-              <div className="border rounded-md">
-                <div className="p-4 space-y-3">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="flex items-center space-x-4">
-                      <Skeleton className="h-12 w-12" />
-                      <div className="space-y-2 flex-1">
-                        <Skeleton className="h-4 w-[250px]" />
-                        <Skeleton className="h-4 w-[200px]" />
+          <div className="space-y-4">
+            {isLoading ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-10 w-[300px]" />
+                  <Skeleton className="h-10 w-[100px]" />
+                </div>
+                <div className="border rounded-md">
+                  <div className="p-4 space-y-3">
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className="flex items-center space-x-4">
+                        <Skeleton className="h-12 w-12" />
+                        <div className="space-y-2 flex-1">
+                          <Skeleton className="h-4 w-[250px]" />
+                          <Skeleton className="h-4 w-[200px]" />
+                        </div>
+                        <Skeleton className="h-8 w-[100px]" />
                       </div>
-                      <Skeleton className="h-8 w-[100px]" />
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          ) : (
-            <DataTable
-              columns={columns}
-              filterColumn="title"
-              onRowClick={(row) => {
-                setSelectedCategory(row)
-                navigate(`/dashboard/category/${brandSlug}/subcategory/${row.slug}`);
-              }}
-              onRowSelectionChange={(rows: any) => setSelectedRows(rows)}
-              filterPlaceholder="Search categories..."
-              data={categories}
-              pagination={{
-                itemsPerPage: limit,
-                currentPage: page,
-                totalItems: collection?.data?.total || 0,
-                totalPages: collection?.data?.totalPages || 1,
-                onPageChange: (newPage) => {
-                  setPage(newPage);
-                },
-                onItemsPerPageChange: (newLimit) => {
-                  setLimit(newLimit);
-                  setPage(1);
-                },
-                showItemsPerPage: true,
-                showPageInput: true,
-                showPageInfo: true,
-              }}
-              elements={
-                <div className="flex gap-2">
-                  {selectedRows.length > 0 && (
+            ) : (
+              <DataTable
+                columns={columns}
+                filterColumn="title"
+                onRowClick={(row) => {
+                  setSelectedCategory(row)
+                  navigate(`/dashboard/category/${brandSlug}/subcategory/${row.slug}`);
+                }}
+                onRowSelectionChange={(rows: any) => setSelectedRows(rows)}
+                filterPlaceholder="Search categories..."
+                data={categories}
+                DraggableRow={SortableCategoryRow}
+                pagination={{
+                  itemsPerPage: limit,
+                  currentPage: page,
+                  totalItems: collection?.data?.total || 0,
+                  totalPages: collection?.data?.totalPages || 1,
+                  onPageChange: (newPage) => {
+                    setPage(newPage);
+                  },
+                  onItemsPerPageChange: (newLimit) => {
+                    setLimit(newLimit);
+                    setPage(1);
+                  },
+                  showItemsPerPage: true,
+                  showPageInput: true,
+                  showPageInfo: true,
+                }}
+                elements={
+                  <div className="flex gap-2">
+                    {selectedRows.length > 0 && (
+                      <Button
+                        variant="destructive"
+                        className="rounded-sm hover:shadow-md transition-shadow"
+                        onClick={() => setShowBulkDeleteDialog(true)}
+                      >
+                        <Icon icon="solar:trash-bin-minimalistic-bold" className="mr-2" width="20" />
+                        delete ({selectedRows.length})
+                      </Button>
+                    )}
+                    {isSudoAdmin && (
+                      <Button
+                        variant="destructive"
+                        onClick={() => navigate("/dashboard/deleted-categories")}
+                      >
+                        <Icon icon="solar:trash-bin-minimalistic-bold" className="mr-2" width="20" />
+                        View Deleted
+                      </Button>
+                    )}
+
                     <Button
-                      variant="destructive"
                       className="rounded-sm hover:shadow-md transition-shadow"
-                      onClick={() => setShowBulkDeleteDialog(true)}
+                      onClick={() => {
+                        useSelectionStore.getState().setSelectedBrandId(params.id as string);
+                        navigate(`/dashboard/category/${params.id}/create`);
+                      }}
                     >
-                      <Icon icon="solar:trash-bin-minimalistic-bold" className="mr-2" width="20" />
-                      delete ({selectedRows.length})
+                      <Icon icon="solar:add-circle-bold" className="mr-2" width="20" />
+                      Add New
                     </Button>
-                  )}
-                  {isSudoAdmin && (
-                    <Button
-                      variant="destructive"
-                      onClick={() => navigate("/dashboard/deleted-categories")}
-                    >
-                      <Icon icon="solar:trash-bin-minimalistic-bold" className="mr-2" width="20" />
-                      View Deleted
-                    </Button>
-                  )}
 
-                  <Button
-                    className="rounded-sm hover:shadow-md transition-shadow"
-                    onClick={() => {
-                      useSelectionStore.getState().setSelectedBrandId(params.id as string);
-                      navigate(`/dashboard/category/${params.id}/create`);
-                    }}
-                  >
-                    <Icon icon="solar:add-circle-bold" className="mr-2" width="20" />
-                    Add New
-                  </Button>
-
-                </div>
-              }
-            />
-          )}
+                  </div>
+                }
+              />
+            )}
+          </div>
         </div>
-      </div>
+      </SortableContext>
 
       <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
         <AlertDialogContent>

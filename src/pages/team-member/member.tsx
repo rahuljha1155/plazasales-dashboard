@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useGetTeamMembers, useDeleteTeamMember, useDeleteBulkMembers } from "@/hooks/useTeam";
 import { DataTable } from "@/components/ui/data-table";
 import { createMemberColumns } from "@/components/member/MemberTableColumns";
@@ -24,6 +24,23 @@ import { toast } from "sonner";
 import { TableShimmer } from "@/components/table-shimmer";
 import { useUserStore } from "@/store/userStore";
 import { UserRole } from "@/components/LoginPage";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { SortableTeamMemberRow } from "@/components/member/SortableTeamMemberRow";
+import { api2 } from "@/services/api";
 
 export default function MembersPage() {
   const {
@@ -39,9 +56,63 @@ export default function MembersPage() {
   const [memberToDelete, setMemberToDelete] = useState<string | null>(null);
   const [selectedRows, setSelectedRows] = useState<Member[]>([]);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
+  const [localMembers, setLocalMembers] = useState<Member[]>([]);
 
   const { mutate: deleteMember, isPending: isDeleting } = useDeleteTeamMember();
   const { mutateAsync: deleteBulkMembers, isPending: isBulkDeleting } = useDeleteBulkMembers();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  useEffect(() => {
+    if (members) {
+      const sortedMembers = [...members].sort((a, b) => a.sortOrder - b.sortOrder);
+      setLocalMembers(sortedMembers);
+    }
+  }, [members]);
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = localMembers.findIndex((member) => member.id === active.id);
+    const newIndex = localMembers.findIndex((member) => member.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(localMembers, oldIndex, newIndex);
+    
+    const updatedMembers = reordered.map((member, index) => ({
+      ...member,
+      sortOrder: index + 1
+    }));
+    
+    setLocalMembers(updatedMembers);
+
+    try {
+      for (let i = 0; i < updatedMembers.length; i++) {
+        const member = updatedMembers[i];
+        const originalMember = localMembers.find(m => m.id === member.id);
+        
+        if (originalMember && originalMember.sortOrder !== member.sortOrder) {
+          await api2.put(`/team/update-member/${member.id}`, {
+            sortOrder: member.sortOrder,
+          });
+        }
+      }
+      
+      toast.success("Team member order updated successfully");
+      fetchMembers();
+    } catch (e: any) {
+      setLocalMembers(localMembers);
+      toast.error(e?.response?.data?.message || "Failed to update order", {
+        description: e?.response?.data?.message || "Something went wrong"
+      });
+    }
+  };
 
   const handleDelete = async (memberId: string) => {
     deleteMember(memberId, {
@@ -183,63 +254,75 @@ export default function MembersPage() {
           {isLoading ? (
             <TableShimmer />
           ) : (
-            <DataTable
-              columns={columns}
-              data={members || []}
-              filterColumn="fullname"
-              filterPlaceholder="Search by name..."
-              onRowSelectionChange={(rows: Member[]) => setSelectedRows(rows)}
-              onRowClick={row => setViewingMember(row as any)}
-              elements={
-                <div className="flex gap-2">
-                  {selectedRows.length > 0 && (
-                    <Button
-                      variant="destructive"
-                      className="rounded-sm hover:shadow-md transition-shadow"
-                      onClick={() => setShowBulkDeleteDialog(true)}
-                    >
-                      <Icon
-                        icon="solar:trash-bin-minimalistic-bold"
-                        className="mr-2"
-                        width="20"
-                      />
-                      delete ({selectedRows.length})
-                    </Button>
-                  )}
-                  <div className="flex gap-3 items-center">
-                    {user?.role == UserRole.SUDOADMIN && (<Link to="/dashboard/team-member/deleted">
-                      <Button
-                        variant="destructive"
-                      >
-                        <Icon
-                          icon="ic:baseline-delete"
-                          width="16"
-                          height="16"
-                          className=" hover:text-red-500"
-                        />
-                        View Deleted
-                      </Button>
-                    </Link>)}
-                    <Button
-                      className="rounded-sm hover:shadow-md transition-shadow"
-                      onClick={() => setIsAdding(true)}
-                    >
-                      <Icon icon="solar:add-circle-bold" className="mr-2" width="20" />
-                      New Member
-                    </Button>
-                  </div>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={localMembers.map((member) => member.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <DataTable
+                  columns={columns}
+                  data={localMembers}
+                  DraggableRow={SortableTeamMemberRow}
+                  filterColumn="fullname"
+                  filterPlaceholder="Search by name..."
+                  onRowSelectionChange={(rows: Member[]) => setSelectedRows(rows)}
+                  onRowClick={row => setViewingMember(row as any)}
+                  elements={
+                    <div className="flex gap-2">
+                      {selectedRows.length > 0 && (
+                        <Button
+                          variant="destructive"
+                          className="rounded-sm hover:shadow-md transition-shadow"
+                          onClick={() => setShowBulkDeleteDialog(true)}
+                        >
+                          <Icon
+                            icon="solar:trash-bin-minimalistic-bold"
+                            className="mr-2"
+                            width="20"
+                          />
+                          delete ({selectedRows.length})
+                        </Button>
+                      )}
+                      <div className="flex gap-3 items-center">
+                        {user?.role == UserRole.SUDOADMIN && (<Link to="/dashboard/team-member/deleted">
+                          <Button
+                            variant="destructive"
+                          >
+                            <Icon
+                              icon="ic:baseline-delete"
+                              width="16"
+                              height="16"
+                              className=" hover:text-red-500"
+                            />
+                            View Deleted
+                          </Button>
+                        </Link>)}
+                        <Button
+                          className="rounded-sm hover:shadow-md transition-shadow"
+                          onClick={() => setIsAdding(true)}
+                        >
+                          <Icon icon="solar:add-circle-bold" className="mr-2" width="20" />
+                          New Member
+                        </Button>
+                      </div>
 
 
-                </div>
-              }
-              pagination={{
-                currentPage: 1,
-                totalPages: 1,
-                totalItems: members?.length || 0,
-                itemsPerPage: members?.length || 10,
-                onPageChange: () => { },
-              }}
-            />
+                    </div>
+                  }
+                  pagination={{
+                    currentPage: 1,
+                    totalPages: 1,
+                    totalItems: localMembers?.length || 0,
+                    itemsPerPage: localMembers?.length || 10,
+                    onPageChange: () => { },
+                  }}
+                />
+              </SortableContext>
+            </DndContext>
           )}
         </>
       )}

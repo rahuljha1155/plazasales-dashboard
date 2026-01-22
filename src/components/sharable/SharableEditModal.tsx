@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { api2 } from "@/services/api";
-import { ArrowLeft, Loader2, Upload, X, ImageIcon } from "lucide-react";
+import { ArrowLeft, Loader2, Upload, X, FileUp } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -92,6 +92,11 @@ export default function SharableEditModal({ sharable, onSuccess, onCancel }: Sha
 
         setMediaFile(file);
         setMediaPreview(URL.createObjectURL(file));
+        
+        // Auto-detect and set file type
+        const fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
+        setValue("fileType", fileExtension);
+        
         e.target.value = "";
     };
 
@@ -206,23 +211,6 @@ export default function SharableEditModal({ sharable, onSuccess, onCancel }: Sha
                             )}
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="fileType">
-                                File Type <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                                id="fileType"
-                                {...register("fileType", {
-                                    required: "File type is required",
-                                })}
-                                placeholder="e.g., jpg, png, pdf, mp4"
-                                className={errors.fileType ? "border-red-500" : ""}
-                            />
-                            {errors.fileType && (
-                                <p className="text-sm text-red-500">{errors.fileType.message}</p>
-                            )}
-                        </div>
-
                         <div className="space-y-3">
                             <Label>
                                 Media Asset <span className="text-red-500">*</span>
@@ -262,7 +250,7 @@ export default function SharableEditModal({ sharable, onSuccess, onCancel }: Sha
                                 />
                                 <div className="flex flex-col items-center justify-center gap-2">
                                     <div className="p-3 bg-primary/10 rounded-full">
-                                        <ImageIcon className="w-6 h-6 text-primary" />
+                                        <FileUp className="w-6 h-6 text-primary" />
                                     </div>
                                     <Button
                                         type="button"
@@ -272,6 +260,9 @@ export default function SharableEditModal({ sharable, onSuccess, onCancel }: Sha
                                         <Upload className="w-4 h-4 mr-2" />
                                         {existingMedia ? "Replace Media" : "Upload Media"}
                                     </Button>
+                                    <p className="text-xs text-muted-foreground text-center">
+                                        Supports images, videos, PDFs and more
+                                    </p>
                                 </div>
                             </div>
 
@@ -305,6 +296,24 @@ export default function SharableEditModal({ sharable, onSuccess, onCancel }: Sha
                             {!existingMedia && !mediaFile && (
                                 <p className="text-sm text-red-500">Media file is required</p>
                             )}
+                        </div>
+
+                        {/* File Type - Auto-generated, Read-only */}
+                        <div className="space-y-2">
+                            <Label htmlFor="fileType">
+                                File Type <span className="text-muted-foreground text-xs">(Auto-detected)</span>
+                            </Label>
+                            <Input
+                                id="fileType"
+                                {...register("fileType")}
+                                placeholder="Upload a file to auto-detect type"
+                                className="bg-muted"
+                                readOnly
+                                disabled
+                            />
+                            {/* <p className="text-xs text-muted-foreground">
+                                File type is automatically detected from the uploaded file
+                            </p> */}
                         </div>
 
                         <div className="space-y-2">

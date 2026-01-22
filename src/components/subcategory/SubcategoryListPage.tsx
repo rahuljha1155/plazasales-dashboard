@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
 import { ArrowRightIcon, Loader, MoreHorizontal, Eye, Edit } from "lucide-react";
 import { Link, useParams, useNavigate } from "react-router-dom";
@@ -33,6 +33,23 @@ import { deleteSubCategory, useGetSubcategoriesByCategoryId, useDeleteBulkSubcat
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TableShimmer } from "../table-shimmer";
 import { useSelectedDataStore } from "@/store/selectedStore";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { SortableSubcategoryRow } from "./SortableSubcategoryRow";
+import { api2 } from "@/services/api";
 
 export default function SubcategoryListPage() {
   const params = useParams();
@@ -47,11 +64,26 @@ export default function SubcategoryListPage() {
   const { mutateAsync: deleteBulkSubcategories, isPending: isBulkDeleting } = useDeleteBulkSubcategories();
 
   const category = categoryData?.data;
-  const subcategories = category?.subCategories || [];
+  const [subcategories, setSubcategories] = useState<any[]>([]);
   const categoryId = category?.subCategories?.[0]?.category?.slug || params?.categorySlug || "";
   const brandId = category?.subCategories?.[0]?.category?.brand?.id || "";
   const brandSlug = params.brandSlug;
   const isSudoAdmin = user?.role === UserRole.SUDOADMIN;
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Update local subcategories state when data changes
+  useEffect(() => {
+    if (category?.subCategories) {
+      const sortedSubcategories = [...category.subCategories].sort((a, b) => a.sortOrder - b.sortOrder);
+      setSubcategories(sortedSubcategories);
+    }
+  }, [category?.subCategories]);
 
   const deleteSubcategoryHandler = async (id: string) => {
     setDeletingId(id);
@@ -77,6 +109,52 @@ export default function SubcategoryListPage() {
     }
   };
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = subcategories.findIndex((sub) => sub.id === active.id);
+    const newIndex = subcategories.findIndex((sub) => sub.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(subcategories, oldIndex, newIndex);
+    
+    // Update the sortOrder property for all items in the new array
+    const updatedSubcategories = reordered.map((subcategory, index) => ({
+      ...subcategory,
+      sortOrder: index + 1
+    }));
+    
+    // Optimistically update the UI with new sort orders
+    setSubcategories(updatedSubcategories);
+
+    try {
+      // Update all items with their new sort orders sequentially
+      for (let i = 0; i < updatedSubcategories.length; i++) {
+        const subcategory = updatedSubcategories[i];
+        const originalSubcategory = subcategories.find(s => s.id === subcategory.id);
+        
+        // Only update if sort order actually changed
+        if (originalSubcategory && originalSubcategory.sortOrder !== subcategory.sortOrder) {
+          await api2.put(`/subcategory/update-subcategory/${subcategory.id}`, {
+            sortOrder: subcategory.sortOrder,
+          });
+        }
+      }
+      
+      toast.success("Subcategory order updated successfully");
+      
+      // Refetch to get the updated data from server
+      refetch();
+    } catch (e: any) {
+      // Rollback on error
+      setSubcategories(subcategories);
+      toast.error(e?.response?.data?.message || "Failed to update order", {
+        description: e?.response?.data?.message || "Something went wrong"
+      });
+    }
+  };
+
   const columns: ColumnDef<any>[] = [
     {
       id: "select",
@@ -86,7 +164,6 @@ export default function SubcategoryListPage() {
             table.getIsAllPageRowsSelected() ||
             (table.getIsSomePageRowsSelected() && "indeterminate")
           }
-          className="ml-2"
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
         />
       ),
@@ -305,69 +382,81 @@ export default function SubcategoryListPage() {
 
       </div>
       <div className="space-y-4">
-        <DataTable
-          columns={columns}
-          filterColumn="title"
-          onRowClick={(row) => {
-            setSelectedSubcategory(row)
-            navigate(`/dashboard/category/${brandSlug}/subcategory/${params.categorySlug}/products/${row.slug}`);
-          }}
-          onRowSelectionChange={(rows: any) => setSelectedRows(rows)}
-          filterPlaceholder="Search subcategories..."
-          data={subcategories}
-          elements={
-            <div className="flex gap-2">
-              {selectedRows.length > 0 && (
-                <Button
-                  variant="destructive"
-                  className="rounded-sm hover:shadow-md transition-shadow"
-                  onClick={() => setShowBulkDeleteDialog(true)}
-                >
-                  <Icon icon="solar:trash-bin-minimalistic-bold" className="mr-2" width="20" />
-                  delete ({selectedRows.length})
-                </Button>
-              )}
-              {isSudoAdmin && (
-                <Button
-                  variant="destructive"
-                  onClick={() => navigate("/dashboard/deleted-subcategories")}
-                >
-                  <Icon icon="solar:trash-bin-minimalistic-bold" className="mr-2" width="20" />
-                  View Deleted
-                </Button>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={subcategories.map((sub) => sub.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <DataTable
+              columns={columns}
+              filterColumn="title"
+              onRowClick={(row) => {
+                setSelectedSubcategory(row)
+                navigate(`/dashboard/category/${brandSlug}/subcategory/${params.categorySlug}/products/${row.slug}`);
+              }}
+              onRowSelectionChange={(rows: any) => setSelectedRows(rows)}
+              filterPlaceholder="Search subcategories..."
+              data={subcategories}
+              DraggableRow={SortableSubcategoryRow}
+              elements={
+                <div className="flex gap-2">
+                  {selectedRows.length > 0 && (
+                    <Button
+                      variant="destructive"
+                      className="rounded-sm hover:shadow-md transition-shadow"
+                      onClick={() => setShowBulkDeleteDialog(true)}
+                    >
+                      <Icon icon="solar:trash-bin-minimalistic-bold" className="mr-2" width="20" />
+                      delete ({selectedRows.length})
+                    </Button>
+                  )}
+                  {isSudoAdmin && (
+                    <Button
+                      variant="destructive"
+                      onClick={() => navigate("/dashboard/deleted-subcategories")}
+                    >
+                      <Icon icon="solar:trash-bin-minimalistic-bold" className="mr-2" width="20" />
+                      View Deleted
+                    </Button>
 
-              )}
-              <Button
-                className="rounded-sm hover:shadow-md transition-shadow"
-                onClick={() => {
-                  useSelectionStore.getState().setSelection({
-                    brandId: brandId,
-                    categoryId: categoryId,
-                    subcategoryId: null,
-                  });
-                  navigate(`/dashboard/category/${brandSlug}/subcategory/${categoryId}/create`);
-                }}
-              >
-                <Icon icon="solar:add-circle-bold" className="mr-2" width="20" />
-                New Category
-              </Button>
+                  )}
+                  <Button
+                    className="rounded-sm hover:shadow-md transition-shadow"
+                    onClick={() => {
+                      useSelectionStore.getState().setSelection({
+                        brandId: brandId,
+                        categoryId: categoryId,
+                        subcategoryId: null,
+                      });
+                      navigate(`/dashboard/category/${brandSlug}/subcategory/${categoryId}/create`);
+                    }}
+                  >
+                    <Icon icon="solar:add-circle-bold" className="mr-2" width="20" />
+                    New Category
+                  </Button>
 
-            </div>
-          }
-          pagination={{
-            itemsPerPage: 10,
-            currentPage: 1,
-            totalItems: subcategories.length,
-            totalPages: Math.ceil(subcategories.length / 10),
-            onPageChange: (page) => {
-            },
-            onItemsPerPageChange: (itemsPerPage) => {
-            },
-            showItemsPerPage: true,
-            showPageInput: true,
-            showPageInfo: true,
-          }}
-        />
+                </div>
+              }
+              pagination={{
+                itemsPerPage: 10,
+                currentPage: 1,
+                totalItems: subcategories.length,
+                totalPages: Math.ceil(subcategories.length / 10),
+                onPageChange: (page) => {
+                },
+                onItemsPerPageChange: (itemsPerPage) => {
+                },
+                showItemsPerPage: true,
+                showPageInput: true,
+                showPageInfo: true,
+              }}
+            />
+          </SortableContext>
+        </DndContext>
       </div>
 
       <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
