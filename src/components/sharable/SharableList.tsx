@@ -78,6 +78,9 @@ export default function SharableList({ entityType, entityId, entityName }: Shara
     const { data, isLoading } = useQuery({
         queryKey: ["getSharables", entityId],
         queryFn: async () => {
+            const url = entityId 
+                ? `/shareable/get-all-shareables?productId=${entityId}`
+                : `/shareable/get-all-shareables`;
             const res = await api2.get<{ 
                 status: number; 
                 message: string;
@@ -88,9 +91,7 @@ export default function SharableList({ entityType, entityId, entityName }: Shara
                     limit: number;
                     totalPages: number;
                 }
-            }>(
-                `/shareable/get-all-shareables?productId=${entityId}`
-            );
+            }>(url);
             return res.data.data;
         },
     });
@@ -178,7 +179,7 @@ export default function SharableList({ entityType, entityId, entityName }: Shara
     if (viewMode === "create") {
         return (
             <SharableCreateModal
-                productId={entityId}
+                productId={entityId || undefined}
                 onSuccess={handleBackToList}
                 onCancel={handleBackToList}
             />

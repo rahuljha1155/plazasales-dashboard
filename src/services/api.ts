@@ -1,10 +1,10 @@
 import axios from "axios";
 
-const API_BASE_URL = "https://plaza-api.webxnepal.com/api/v1/plaza";
-const API2_BASE_URL = "https://plaza-api.webxnepal.com/api/v1/plaza";
+// const API_BASE_URL = "https://app.plazasales.com.np/api/v1/plaza";
+// const API2_BASE_URL = "https://app.plazasales.com.np/api/v1/plaza";
 
-// const API_BASE_URL = "/api";
-// const API2_BASE_URL = "/api";
+const API_BASE_URL = "/api";
+const API2_BASE_URL = "/api";
 
 let recaptchaTokenGetter: (() => Promise<string | null>) | null = null;
 

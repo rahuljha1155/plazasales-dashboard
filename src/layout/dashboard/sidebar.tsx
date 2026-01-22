@@ -85,6 +85,12 @@ export default function Sidebar({ pathname, collapsed }: SidebarProps) {
       label: "Advertisements",
       extraClasses: "text-muted-foreground hover:text-foreground",
     },
+    {
+      href: "/dashboard/sharable",
+      icon: "solar:share-linear",
+      label: "Shareable Resources",
+      extraClasses: "text-muted-foreground hover:text-foreground",
+    },
     // {
     //   href: "/dashboard/page-content",
     //   icon: "ion:rocket-outline",

@@ -121,6 +121,7 @@ import {
   BrandAdsPage,
 } from "./components/ads";
 import ProductSharablePage from "./components/sharable/ProductSharablePage";
+import AllSharablesPage from "./components/sharable/AllSharablesPage";
 import SharableCreateModal from "./components/sharable/SharableCreateModal";
 import SharableEditModal from "./components/sharable/SharableEditModal";
 import SharableViewPage from "./components/sharable/SharableViewPage";
@@ -255,9 +256,10 @@ function App() {
                 <Route path="subcategories/:subcategoryId/ads" element={<SubcategoryAdsPage />} />
 
                 {/* Sharable Routes */}
+                <Route path="sharable" element={<AllSharablesPage />} />
+                <Route path="sharable/deleted" element={<DeletedSharableList />} />
                 <Route path="products/:productId/sharable" element={<ProductSharablePage />} />
                 <Route path="products/:productId/sharable/deleted" element={<DeletedSharableList />} />
-                <Route path="sharable/deleted" element={<DeletedSharableList />} />
 
                 {/* Booking Routes */}
                 <Route path="bookings" element={<BookingPage />} />

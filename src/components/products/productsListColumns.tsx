@@ -159,14 +159,6 @@ export const createProductsColumns = ({
                 Manage Ads
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => { 
-                setSelectedProduct(product);
-                navigate(`/dashboard/products/${product.id}/sharable`);
-              }}>
-                <Share2 className="w-4 h-4 mr-2" />
-                Sharable
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => { setSelectedProduct(product); setDeleteId(product.id) }} className="text-red-600 focus:text-red-600">
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete

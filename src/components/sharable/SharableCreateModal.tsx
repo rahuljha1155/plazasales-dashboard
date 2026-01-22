@@ -18,7 +18,7 @@ import { api2 } from "@/services/api";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface ISharableForm {
-    productId: string;
+    productId?: string;
     kind: string;
     title: string;
     fileType: string;
@@ -28,7 +28,7 @@ interface ISharableForm {
 }
 
 interface SharableCreateModalProps {
-    productId: string;
+    productId?: string;
     onSuccess: () => void;
     onCancel: () => void;
 }
@@ -93,7 +93,9 @@ export default function SharableCreateModal({ productId, onSuccess, onCancel }: 
             }
 
             const formData = new FormData();
-            formData.append("productId", data.productId);
+            if (data.productId) {
+                formData.append("productId", data.productId);
+            }
             formData.append("kind", data.kind.trim());
             formData.append("title", data.title.trim());
             formData.append("fileType", data.fileType.trim());
