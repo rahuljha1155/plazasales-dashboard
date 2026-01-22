@@ -1,0 +1,57 @@
+name: System Dashboard CI/CD (Vite Static, Apache)
+
+on:
+  push:
+    branches: [ "main" ]
+
+concurrency:
+  group: system-dashboard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            set -euo pipefail
+
+            APP_DIR="/var/www/plazasales-dashboard"
+            WEB_DIR="/var/www/system.plazasales.com.np"
+            BRANCH="main"
+
+            cd "${APP_DIR}"
+
+            echo "📦 Pull latest code..."
+            git fetch origin "${BRANCH}"
+            git reset --hard "origin/${BRANCH}"
+
+            echo "✅ Ensure pnpm exists..."
+            if ! command -v pnpm >/dev/null 2>&1; then
+              npm i -g pnpm
+            fi
+
+            echo "📥 Install deps..."
+            pnpm install --frozen-lockfile
+
+            echo "🛠 Build..."
+            pnpm build
+
+            echo "🚚 Sync dist to web root..."
+            rsync -a --delete "${APP_DIR}/dist/" "${WEB_DIR}/"
+            chown -R apache:apache "${WEB_DIR}"
+
+            echo "♻️ Reload Apache..."
+            httpd -t
+            systemctl reload httpd
+
+            echo "🧪 Health check..."
+            curl -I --max-time 15 "http://127.0.0.1/" -H "Host: system.plazasales.com.np" | head -n 1
+
+            echo "✅ Done"
