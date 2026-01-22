@@ -1,16 +1,29 @@
 import axios from "axios";
 
 //for production
-// const API_BASE_URL =
-//   import.meta.env.VITE_BACKEND_URL ||
-//   "https://app.plazasales.com.np/api/v1/plaza";
-// const API2_BASE_URL =
-//   import.meta.env.VITE_BACKEND_URL ||
-//   "https://app.plazasales.com.np/api/v1/plaza";
+const API_BASE_URL =
+  import.meta.env.VITE_BACKEND_URL ||
+  "https://app.plazasales.com.np/api/v1/plaza";
+const API2_BASE_URL =
+  import.meta.env.VITE_BACKEND_URL ||
+  "https://app.plazasales.com.np/api/v1/plaza";
 
 //for development
-const API_BASE_URL = "/api";
-const API2_BASE_URL = "/api";
+// const API_BASE_URL = "/api";
+// const API2_BASE_URL = "/api";
+
+// Suppress 404 errors from console
+const originalConsoleError = console.error;
+console.error = (...args: any[]) => {
+  // Check if this is a 404 error from axios
+  const errorString = args.join(' ');
+  if (errorString.includes('404') && errorString.includes('Not Found')) {
+    // Silently ignore 404 errors
+    return;
+  }
+  // Log all other errors normally
+  originalConsoleError.apply(console, args);
+};
 
 let recaptchaTokenGetter: (() => Promise<string | null>) | null = null;
 
@@ -60,6 +73,12 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // Suppress 404 errors in console (but still reject the promise)
+    if (error.response?.status === 404) {
+      // Silently handle 404 errors - don't log to console
+      return Promise.reject(error);
+    }
+
     if (
       error.response?.status === 400 &&
       error.response?.data?.message?.toLowerCase().includes("recaptcha") &&
@@ -108,6 +127,12 @@ api2.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+
+    // Suppress 404 errors in console (but still reject the promise)
+    if (error.response?.status === 404) {
+      // Silently handle 404 errors - don't log to console
+      return Promise.reject(error);
+    }
 
     if (
       error.response?.status === 400 &&
