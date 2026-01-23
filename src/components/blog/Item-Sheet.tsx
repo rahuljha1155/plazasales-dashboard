@@ -160,13 +160,14 @@ export function BlogForm({ blog, onSuccess, onCancel }: BlogFormProps) {
     });
 
     if (blog) {
-      // Handle removed media assets
+      // Handle removed media assets - send each ID with [] notation
       const removedAssets = originalMediaAssets.filter(
         asset => !mediaPreviews.includes(asset.fileUrl)
       );
+      
       if (removedAssets.length > 0) {
         removedAssets.forEach((asset) => {
-          formData.append("removedMediaIds", asset.id);
+          formData.append("removedMediaIds[]", asset.id);
         });
       }
 
