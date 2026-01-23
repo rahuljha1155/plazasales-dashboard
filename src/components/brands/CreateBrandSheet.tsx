@@ -155,23 +155,24 @@ export function BrandForm({ mode = "create", brand, onSuccess, onCancel }: Brand
     try {
       const formData = new FormData();
 
+      // Required fields - always send
       formData.append("name", values.name);
       formData.append("slug", values.slug);
       formData.append("themeColor", values.themeColor);
-
-      if (values.description) {
-        formData.append("description", values.description);
-      }
-
       formData.append("isAuthorizedDistributor", String(values.isAuthorizedDistributor ?? false));
-      formData.append("usp", values.usp || "");
 
-      if (values.playStoreUrl) {
-        formData.append("playStoreUrl", values.playStoreUrl);
-      }
-
-      if (values.appStoreUrl) {
-        formData.append("appStoreUrl", values.appStoreUrl);
+      // For edit mode: always send all fields (even if empty) so backend knows to clear them
+      // For create mode: only send non-empty optional fields
+      if (mode === "edit") {
+        formData.append("description", values.description || "");
+        formData.append("usp", values.usp || "");
+        formData.append("playStoreUrl", values.playStoreUrl || "");
+        formData.append("appStoreUrl", values.appStoreUrl || "");
+      } else {
+        if (values.description) formData.append("description", values.description);
+        formData.append("usp", values.usp || "");
+        if (values.playStoreUrl) formData.append("playStoreUrl", values.playStoreUrl);
+        if (values.appStoreUrl) formData.append("appStoreUrl", values.appStoreUrl);
       }
 
       // Append logo file

@@ -39,12 +39,40 @@ export default function ProfileStatsCard() {
 
   if (!user) return null;
 
-  // Determine avatar image based on user role
+  // Determine avatar image based on user role and profile picture
   const getAvatarImage = () => {
-    if (user?.role === UserRole.SUDOADMIN || user?.role === UserRole.ADMIN) {
-      return "/logo/admin.png";
+    // Check both profile and profilePicture fields from backend
+    const profileImage = user?.profilePicture || user?.profile;
+    
+    // If user has uploaded a profile picture, use it (regardless of role)
+    if (profileImage) {
+      // If it's already a full URL (starts with http), return as is
+      if (profileImage.startsWith('http')) {
+        return profileImage;
+      }
+      
+      // If it's a relative path starting with /, return as is (public folder)
+      if (profileImage.startsWith('/')) {
+        return profileImage;
+      }
+      
+      // Otherwise, it's likely a backend path, construct full URL
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://app.plazasales.com.np/api/v1/';
+      const baseUrl = backendUrl.replace(/\/api\/v1\/?$/, '');
+      return `${baseUrl}/${profileImage}`;
     }
-    return user?.profilePicture || "/avatar/avatar2.png";
+    
+    // Fallback: If no profile picture, show role-based default icons
+    if (user?.role === UserRole.SUDOADMIN) {
+      return "/logo/admin.png"; // SUDOADMIN default icon
+    }
+    
+    if (user?.role === UserRole.ADMIN) {
+      return "/avatar/admin2.png"; // ADMIN default icon (different from SUDOADMIN)
+    }
+    
+    // Final fallback for regular users
+    return "/avatar/avatar2.png";
   };
 
   const image = getAvatarImage();
@@ -68,11 +96,18 @@ export default function ProfileStatsCard() {
           <div className="h-48 bg-gradient-to-r from-primary to-primary/80 rounded-2xl" />
 
           <div className="absolute -bottom-16 left-8 flex items-end gap-6">
-            <img
-              src={image}
-              alt="User Avatar"
-              className="size-32 rounded-full shadow-xl object-cover ring-4 ring-white bg-white"
-            />
+            <div className="relative size-32 rounded-full shadow-xl ring-4 ring-white bg-white overflow-hidden">
+              <img
+                src={image}
+                alt="User Avatar"
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  // Fallback to default avatar if image fails to load
+                  const target = e.target as HTMLImageElement;
+                  target.src = "/avatar/avatar2.png";
+                }}
+              />
+            </div>
             <div className="pt-2">
               <h1 className="text-3xl font-bold  capitalize">
                 {fullName}

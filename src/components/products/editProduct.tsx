@@ -425,36 +425,39 @@ export default function EditProduct() {
     try {
       const formData = new FormData();
 
-      // Append all text fields
+      // Required fields - always send
       formData.append("name", data.name);
       formData.append("slug", data.slug);
-      formData.append("model", data.model || "");
-      if (data.price) formData.append("price", data.price.toString());
-      if (data.mrp) formData.append("mrp", data.mrp.toString());
-      formData.append("shortDescription", data.shortDescription || "");
-      formData.append("description", data.description || "");
-      if (data.technology) formData.append("technology", data.technology);
-
-      if (isSaasProduct && demoPlans.length > 0) {
-        formData.append("feature", JSON.stringify(demoPlans));
-      } else if (isSaasBrand && data.saasFeatures) {
-        formData.append("feature", JSON.stringify(data.saasFeatures));
-      } else if (data.feature) {
-        formData.append("feature", data.feature);
-      }
-
-      if (data.metaTitle) formData.append("metaTitle", data.metaTitle);
-      if (data.metadescription)
-        formData.append("metadescription", data.metadescription);
-      if (data.metatag && data.metatag.length > 0) {
-        data.metatag.forEach((tag) => formData.append("metatag[]", tag));
-      }
-
       formData.append("isPublished", data.isPublished.toString());
       formData.append("isPopular", data.isPopular.toString());
       formData.append("productType", data.productType);
       formData.append("brandId", data.brandId);
       formData.append("subcategoryId", data.subcategoryId);
+
+      // Edit mode: always send all fields (even if empty) so backend knows to clear them
+      formData.append("model", data.model || "");
+      formData.append("shortDescription", data.shortDescription || "");
+      formData.append("description", data.description || "");
+      formData.append("metaTitle", data.metaTitle || "");
+      formData.append("metadescription", data.metadescription || "");
+      
+      if (data.price) formData.append("price", data.price.toString());
+      if (data.mrp) formData.append("mrp", data.mrp.toString());
+      if (data.technology) formData.append("technology", data.technology);
+
+      // Feature field - always send in edit mode (even if empty)
+      if (isSaasProduct && demoPlans.length > 0) {
+        formData.append("feature", JSON.stringify(demoPlans));
+      } else if (isSaasBrand && data.saasFeatures) {
+        formData.append("feature", JSON.stringify(data.saasFeatures));
+      } else {
+        // Always send feature field in edit mode, even if empty
+        formData.append("feature", data.feature || "");
+      }
+
+      if (data.metatag && data.metatag.length > 0) {
+        data.metatag.forEach((tag) => formData.append("metatag[]", tag));
+      }
 
       if (data.coverImage instanceof File) {
         formData.append("coverImage", data.coverImage);

@@ -51,12 +51,40 @@ export default function UserMenu({ isLogingOut, handleLogout }: UserMenuProps) {
     fetchUserDetails();
   }, [storeUser?.id, storeUser?._id]);
 
-  // Determine avatar image based on user role
+  // Determine avatar image based on user role and profile picture
   const getAvatarImage = () => {
-    if (user?.role === UserRole.SUDOADMIN || user?.role === UserRole.ADMIN) {
-      return "/logo/admin.png";
+    // Check both profile and profilePicture fields from backend
+    const profileImage = user?.profilePicture || user?.profile;
+    
+    // If user has uploaded a profile picture, use it (regardless of role)
+    if (profileImage) {
+      // If it's already a full URL (starts with http), return as is
+      if (profileImage.startsWith('http')) {
+        return profileImage;
+      }
+      
+      // If it's a relative path starting with /, return as is (public folder)
+      if (profileImage.startsWith('/')) {
+        return profileImage;
+      }
+      
+      // Otherwise, it's likely a backend path, construct full URL
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://app.plazasales.com.np/api/v1/';
+      const baseUrl = backendUrl.replace(/\/api\/v1\/?$/, '');
+      return `${baseUrl}/${profileImage}`;
     }
-    return user?.profilePicture || "/avatar/avatar2.png";
+    
+    // Fallback: If no profile picture, show role-based default icons
+    if (user?.role === UserRole.SUDOADMIN) {
+      return "/logo/admin.png"; // SUDOADMIN default icon
+    }
+    
+    if (user?.role === UserRole.ADMIN) {
+      return "/avatar/admin2.png"; // ADMIN default icon (different from SUDOADMIN)
+    }
+    
+    // Final fallback for regular users
+    return "/avatar/avatar2.png";
   };
 
   return (
@@ -65,12 +93,17 @@ export default function UserMenu({ isLogingOut, handleLogout }: UserMenuProps) {
         <Button
           variant="ghost"
           size="icon"
-          className="relative h-9 w-9  rounded-full cursor-pointer border border-transparent hover:border-orange-500"
+          className="relative h-9 w-9  rounded-full cursor-pointer border border-transparent hover:border-orange-500 overflow-hidden"
         >
           <img
             src={getAvatarImage()}
             alt="User Avatar"
-            className="h-full w-full rounded-full object-cover"
+            className="h-full w-full rounded-full object-contain"
+            onError={(e) => {
+              // Fallback to default avatar if image fails to load
+              const target = e.target as HTMLImageElement;
+              target.src = "/avatar/avatar2.png";
+            }}
           />
         </Button>
       </DropdownMenuTrigger>
