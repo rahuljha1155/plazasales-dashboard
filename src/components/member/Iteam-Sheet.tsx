@@ -129,15 +129,25 @@ export function MemberSheet({
       formData.append("designation", values.designation);
       formData.append("memberType", values.memberType);
       formData.append("countryCode", values.countryCode);
+      formData.append("description", values.description);
+      
       if (values.phoneNumber) {
         formData.append("phoneNumber", values.phoneNumber);
       }
-      formData.append("description", values.description);
 
-      if (values.facebook) formData.append("facebook", values.facebook);
-      if (values.twitter) formData.append("twitter", values.twitter);
-      if (values.linkedin) formData.append("linkedin", values.linkedin);
-      if (values.instagram) formData.append("instagram", values.instagram);
+      // For edit mode: always send social media fields (even if empty) so backend knows to clear them
+      if (member) {
+        formData.append("facebook", values.facebook || "");
+        formData.append("twitter", values.twitter || "");
+        formData.append("linkedin", values.linkedin || "");
+        formData.append("instagram", values.instagram || "");
+      } else {
+        // For create mode: only send if not empty
+        if (values.facebook) formData.append("facebook", values.facebook);
+        if (values.twitter) formData.append("twitter", values.twitter);
+        if (values.linkedin) formData.append("linkedin", values.linkedin);
+        if (values.instagram) formData.append("instagram", values.instagram);
+      }
 
       if (typeof values.addToHome === "boolean") {
         formData.append("addToHome", String(values.addToHome));
