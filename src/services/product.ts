@@ -360,3 +360,42 @@ export const useToggleProductPublished = () => {
     }
   });
 };
+
+// === Toggle Product Popular Status ===
+export const toggleProductPopular = async (
+  productId: string,
+  isPopular: boolean
+): Promise<any> => {
+  const res = await api2.put(`/product/update-product/${productId}`, {
+    isPopular
+  });
+  return res.data;
+};
+
+export const useToggleProductPopular = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationKey: ["toggleProductPopular"],
+    mutationFn: ({ productId, isPopular }: { productId: string; isPopular: boolean }) =>
+      toggleProductPopular(productId, isPopular),
+    onSuccess: (data) => {
+      // Invalidate all product queries to refresh the list
+      queryClient.invalidateQueries({ queryKey: ["getAllProducts"] });
+      queryClient.invalidateQueries({ queryKey: ["getProductsBySubcategory"] });
+      queryClient.invalidateQueries({ queryKey: ["getProductsByCategory"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+
+      toast.success(
+        (data as any)?.message || "Product popularity updated successfully",
+        { position: "bottom-right" }
+      );
+    },
+    onError: (error: any) => {
+      toast.error(
+        error.response?.data?.message || "Failed to update product popularity",
+        { position: "bottom-right" }
+      );
+    }
+  });
+};

@@ -184,8 +184,8 @@ export default function EditProduct() {
         metaTitle: product.product?.metaTitle || "",
         metatag: product.product?.metatag || [],
         metadescription: product.product?.metadescription || "",
-        isPublished: product.product?.isPublished || false,
-        isPopular: product.product?.isPopular || false,
+        isPublished: product.product?.isPublished ?? false,
+        isPopular: product.product?.isPopular ?? false,
         productType: productTypeValue,
         brandId: brandId,
         subcategoryId: subcategoryId,
@@ -428,8 +428,11 @@ export default function EditProduct() {
       // Required fields - always send
       formData.append("name", data.name);
       formData.append("slug", data.slug);
-      formData.append("isPublished", data.isPublished.toString());
-      formData.append("isPopular", data.isPopular.toString());
+      
+      // Send boolean fields - always send both to ensure backend processes them
+      formData.append("isPublished", data.isPublished ? "true" : "false");
+      formData.append("isPopular", data.isPopular ? "true" : "false");
+      
       formData.append("productType", data.productType);
       formData.append("brandId", data.brandId);
       formData.append("subcategoryId", data.subcategoryId);

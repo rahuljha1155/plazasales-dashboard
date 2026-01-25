@@ -6,6 +6,7 @@ import {
 } from "@/hooks/useProduct";
 import { useSelectionStore } from "@/store/selectionStore";
 import { useGetProductsBySubcategory, useUpdateProductSortOrder } from "@/services/product";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   DndContext,
   closestCenter,
@@ -94,6 +95,7 @@ export default function ProductsList() {
   );
 
   const updateSortOrderMutation = useUpdateProductSortOrder();
+  const queryClient = useQueryClient();
 
   // Sortable row component
   const DraggableRow = ({ id, children }: { id: string; company: any; children: React.ReactNode }) => {
@@ -169,6 +171,30 @@ export default function ProductsList() {
         }
       }
       
+      // Force refresh the data after all updates are complete
+      // Invalidate the specific query being used
+      await queryClient.invalidateQueries({ 
+        queryKey: ["getProductsBySubcategory", subcategoryId, { page }] 
+      });
+      // Invalidate all queries for this subcategory (different pages)
+      await queryClient.invalidateQueries({ 
+        queryKey: ["getProductsBySubcategory", subcategoryId] 
+      });
+      // Invalidate general product queries
+      await queryClient.invalidateQueries({ queryKey: ["getAllProducts"] });
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+      
+      // Also refetch the current query to ensure UI updates
+      await subcategoryQuery.refetch();
+      
+      // Update the local state to match the new order (backup approach)
+      const freshData = await subcategoryQuery.refetch();
+      if (freshData.data?.data?.products) {
+        // Sort the fresh data by sortOrder
+        const sortedProducts = [...freshData.data.data.products].sort((a, b) => a.sortOrder - b.sortOrder);
+        setProducts(sortedProducts);
+      }
+      
       toast.success("Product order updated successfully");
     } catch (error: any) {
       // Rollback on error
@@ -212,7 +238,9 @@ export default function ProductsList() {
 
   useEffect(() => {
     if (data?.data?.products) {
-      setProducts(data.data.products);
+      // Sort products by sortOrder to ensure correct display order
+      const sortedProducts = [...data.data.products].sort((a, b) => a.sortOrder - b.sortOrder);
+      setProducts(sortedProducts);
     }
   }, [data]);
 

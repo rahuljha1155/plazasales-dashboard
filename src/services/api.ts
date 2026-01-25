@@ -49,7 +49,7 @@ async function injectRecaptchaToken(config: any) {
     if (token) {
       config.headers["X-Recaptcha-Token"] = token;
     }
-  } catch (err) {}
+  } catch (err) { }
 
   if (config.data instanceof FormData) {
     delete config.headers["Content-Type"];

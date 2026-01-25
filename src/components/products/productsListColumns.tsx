@@ -7,7 +7,7 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { IProduct } from "@/types/IProduct";
 import { useSelectedDataStore } from "@/store/selectedStore";
-import { useToggleProductPublished } from "@/services/product";
+import { useToggleProductPublished, useToggleProductPopular } from "@/services/product";
 
 interface CreateProductsColumnsParams {
   navigate: (path: string) => void;
@@ -100,6 +100,27 @@ export const createProductsColumns = ({
               togglePublished({
                 productId: product.id,
                 isPublished: checked,
+              });
+            }}
+            disabled={isPending}
+          />
+        );
+      },
+    },
+    {
+      accessorKey: "isPopular",
+      header: "Popular",
+      cell: ({ row }) => {
+        const product = row.original;
+        const { mutate: togglePopular, isPending } = useToggleProductPopular();
+
+        return (
+          <Switch
+            checked={product.isPopular}
+            onCheckedChange={(checked) => {
+              togglePopular({
+                productId: product.id,
+                isPopular: checked,
               });
             }}
             disabled={isPending}
