@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   useGetDownloadsByProductId,
   useDeleteProductDownload,
   useDownloadFile,
+  useUpdateProductDownloadSortOrder,
 } from "@/hooks/useProductDownload";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,11 +31,29 @@ import { TableShimmer } from "@/components/table-shimmer";
 import { useUserStore } from "@/store/userStore";
 import { UserRole } from "@/components/LoginPage";
 import Breadcrumb from "@/components/dashboard/Breadcumb";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { SortableProductDownloadRow } from "./SortableProductDownloadRow";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function ProductDownloadList() {
   const params = useParams();
   const navigate = useNavigate();
   const { user } = useUserStore();
+  const queryClient = useQueryClient();
   const categoryId = params?.categoryId as string;
   const productId = params?.pid as string;
 
@@ -42,14 +61,30 @@ export default function ProductDownloadList() {
   const [editDownload, setEditDownload] = useState<ProductDownload | null>(null);
   const [viewDownload, setViewDownload] = useState<ProductDownload | null>(null);
   const [selectedRows, setSelectedRows] = useState<ProductDownload[]>([]);
+  const [downloads, setDownloads] = useState<ProductDownload[]>([]);
 
   const { selectedBrand, selectedCategory, selectedSubcategory, selectedProduct } = useSelectedDataStore();
 
   const { data, isLoading, error } = useGetDownloadsByProductId(productId);
   const { mutateAsync: deleteDownload, isPending: isDeletePending } = useDeleteProductDownload();
   const downloadFileMutation = useDownloadFile();
+  const { mutateAsync: updateSortOrder } = useUpdateProductDownloadSortOrder();
 
   const isSudoAdmin = user?.role === UserRole.SUDOADMIN;
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  useEffect(() => {
+    if (data?.downloads) {
+      const sortedDownloads = [...data.downloads].sort((a, b) => a.sortOrder - b.sortOrder);
+      setDownloads(sortedDownloads);
+    }
+  }, [data]);
 
   const handleDelete = async (id: string) => {
     try {
@@ -85,6 +120,53 @@ export default function ProductDownloadList() {
     }
   };
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const oldIndex = downloads.findIndex((download) => download.id === active.id);
+    const newIndex = downloads.findIndex((download) => download.id === over.id);
+
+    const newDownloads = arrayMove(downloads, oldIndex, newIndex);
+    
+    // Update the sortOrder property for all items in the new array
+    const updatedDownloads = newDownloads.map((download, index) => ({
+      ...download,
+      sortOrder: index + 1
+    }));
+    
+    // Optimistically update the UI with new sort orders
+    setDownloads(updatedDownloads);
+
+    try {
+      // Update all items with their new sort orders sequentially
+      for (let i = 0; i < updatedDownloads.length; i++) {
+        const download = updatedDownloads[i];
+        const originalDownload = downloads.find(d => d.id === download.id);
+        
+        // Only update if sort order actually changed
+        if (originalDownload && originalDownload.sortOrder !== download.sortOrder) {
+          await updateSortOrder({
+            downloadId: download.id,
+            sortOrder: download.sortOrder,
+          });
+        }
+      }
+      
+      toast.success("Download order updated successfully");
+      
+      // Refetch to get the updated data from server
+      queryClient.invalidateQueries({ queryKey: ["product-downloads-by-product", productId] });
+    } catch (error: any) {
+      // Revert on error
+      setDownloads(downloads);
+      toast.error(error?.response?.data?.message || "Failed to update download order");
+    }
+  };
+
   const breadcrumbLinks = [
     { label: selectedBrand?.name || "Brands", href: "/dashboard/brands" },
     { label: selectedCategory?.title || "Product Types", href: `/dashboard/category/${selectedBrand?.slug || ""}` },
@@ -101,7 +183,7 @@ export default function ProductDownloadList() {
     isDeletePending: isDeletePending,
   });
 
-  const tableData = (data?.downloads || []).map((download: any) => ({
+  const tableData = downloads.map((download: any) => ({
     ...download,
     _id: download.id,
   }));
@@ -131,98 +213,110 @@ export default function ProductDownloadList() {
       <Breadcrumb links={breadcrumbLinks} />
 
       <div className="">
-        <DataTable
-          columns={columns as any}
-          data={tableData}
-          filterColumn="title"
-          onRowClick={(row) => setViewDownload(row as ProductDownload)}
-          elements={
-            <div className="flex gap-2">
-              {selectedRows.length > 0 && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={downloads.map((download) => download.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <DataTable
+              columns={columns as any}
+              data={tableData}
+              filterColumn="title"
+              DraggableRow={SortableProductDownloadRow}
+              onRowClick={(row) => setViewDownload(row as ProductDownload)}
+              elements={
+                <div className="flex gap-2">
+                  {selectedRows.length > 0 && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="destructive"
+                          disabled={isDeletePending}
+                        >
+                          <Icon icon="solar:trash-bin-trash-bold" className="mr-2" width="20" />
+                          delete ({selectedRows.length})
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="max-w-md">
+                        <AlertDialogHeader>
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center">
+                              <Icon
+                                icon="solar:danger-bold"
+                                className="text-red-600"
+                                width="24"
+                              />
+                            </div>
+                            <div>
+                              <AlertDialogTitle className="text-lg">
+                                Delete Product Downloads
+                              </AlertDialogTitle>
+                              <p className="text-sm text-gray-500 mt-1">
+                                {selectedRows.length} item(s)
+                              </p>
+                            </div>
+                          </div>
+                          <AlertDialogDescription className="text-gray-600">
+                            This action will move the selected {selectedRows.length} downloads to the trash.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel className="rounded-lg">
+                            Cancel
+                          </AlertDialogCancel>
+                          <AlertDialogAction
+                            className="bg-red-500 hover:bg-red-600 rounded-lg"
+                            onClick={handleBulkDelete}
+                          >
+                            <Icon icon="solar:trash-bin-trash-bold" className="mr-2" width="16" />
+                            Delete Downloads
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+
+                  <Button
+                    className="rounded-sm hover:shadow-md transition-shadow"
+                    onClick={() => setCreateModalOpen(true)}
+                  >
+                    <Icon icon="solar:add-circle-bold" className="mr-2" width="20" />
+                    New Download
+                  </Button>
+
+                  {isSudoAdmin && tableData.length >= 0 && (
                     <Button
                       variant="destructive"
-                      disabled={isDeletePending}
+                      onClick={() => navigate("/dashboard/product-downloads/deleted")}
                     >
-                      <Icon icon="solar:trash-bin-trash-bold" className="mr-2" width="20" />
-                      delete ({selectedRows.length})
+                      <Icon icon="solar:trash-bin-minimalistic-bold" className="mr-2" width="20" />
+                      View Deleted
                     </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent className="max-w-md">
-                    <AlertDialogHeader>
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center">
-                          <Icon
-                            icon="solar:danger-bold"
-                            className="text-red-600"
-                            width="24"
-                          />
-                        </div>
-                        <div>
-                          <AlertDialogTitle className="text-lg">
-                            Delete Product Downloads
-                          </AlertDialogTitle>
-                          <p className="text-sm text-gray-500 mt-1">
-                            {selectedRows.length} item(s)
-                          </p>
-                        </div>
-                      </div>
-                      <AlertDialogDescription className="text-gray-600">
-                        This action will move the selected {selectedRows.length} downloads to the trash.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel className="rounded-lg">
-                        Cancel
-                      </AlertDialogCancel>
-                      <AlertDialogAction
-                        className="bg-red-500 hover:bg-red-600 rounded-lg"
-                        onClick={handleBulkDelete}
-                      >
-                        <Icon icon="solar:trash-bin-trash-bold" className="mr-2" width="16" />
-                        Delete Downloads
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
-
-              <Button
-                className="rounded-sm hover:shadow-md transition-shadow"
-                onClick={() => setCreateModalOpen(true)}
-              >
-                <Icon icon="solar:add-circle-bold" className="mr-2" width="20" />
-                New Download
-              </Button>
-
-              {isSudoAdmin && tableData.length >= 0 && (
-                <Button
-                  variant="destructive"
-                  onClick={() => navigate("/dashboard/product-downloads/deleted")}
-                >
-                  <Icon icon="solar:trash-bin-minimalistic-bold" className="mr-2" width="20" />
-                  View Deleted
-                </Button>
-              )}
-            </div>
-          }
-          filterPlaceholder="Search product downloads by title..."
-          pagination={{
-            itemsPerPage: 10,
-            currentPage: 1,
-            totalItems: tableData.length,
-            totalPages: 1,
-            onPageChange: () => { },
-            onItemsPerPageChange: () => { },
-            showItemsPerPage: false,
-            showPageInput: false,
-            showPageInfo: true,
-          }}
-          onRowSelectionChange={(rows) => {
-            setSelectedRows(rows as ProductDownload[]);
-          }}
-        />
+                  )}
+                </div>
+              }
+              filterPlaceholder="Search product downloads by title..."
+              pagination={{
+                itemsPerPage: 10,
+                currentPage: 1,
+                totalItems: tableData.length,
+                totalPages: 1,
+                onPageChange: () => { },
+                onItemsPerPageChange: () => { },
+                showItemsPerPage: false,
+                showPageInput: false,
+                showPageInfo: true,
+              }}
+              onRowSelectionChange={(rows) => {
+                setSelectedRows(rows as ProductDownload[]);
+              }}
+            />
+          </SortableContext>
+        </DndContext>
       </div>
 
 

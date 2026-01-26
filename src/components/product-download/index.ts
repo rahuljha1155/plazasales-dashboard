@@ -5,3 +5,4 @@ export { ProductDownloadViewModal } from "./ProductDownloadViewModal";
 export { default as DeletedProductDownloadList } from "./DeletedProductDownloadList";
 export { createProductDownloadColumns } from "./ProductDownloadTableColumns";
 export { createDeletedProductDownloadColumns } from "./DeletedProductDownloadTableColumns";
+export { SortableProductDownloadRow } from "./SortableProductDownloadRow";

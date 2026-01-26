@@ -294,3 +294,19 @@ export const useDestroyDownloadCategoryPermanently = () => {
     },
   });
 };
+
+// Update download category sort order
+export const useUpdateDownloadCategorySortOrder = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ categoryId, sortOrder }: { categoryId: string; sortOrder: number }) => {
+      const response = await api.put(`/download-category/update-category/${categoryId}`, { sortOrder });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["download-categories"] });
+      queryClient.invalidateQueries({ queryKey: ["download-categories-by-product"] });
+    },
+  });
+};

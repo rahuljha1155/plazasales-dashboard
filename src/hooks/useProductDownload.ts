@@ -238,3 +238,19 @@ export const useDownloadFile = () => {
     },
   });
 };
+
+// Update product download sort order
+export const useUpdateProductDownloadSortOrder = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ downloadId, sortOrder }: { downloadId: string; sortOrder: number }) => {
+      const response = await api.put(`/product-download/update-download/${downloadId}`, { sortOrder });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["product-downloads"] });
+      queryClient.invalidateQueries({ queryKey: ["product-downloads-by-product"] });
+    },
+  });
+};
