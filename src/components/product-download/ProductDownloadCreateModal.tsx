@@ -45,7 +45,6 @@ export function ProductDownloadCreateModal({
     platforms: [] as string[],
     fileType: "",
     deprecated: false,
-    isActive: true,
     sortOrder: 1,
     mirrors: [] as Array<{ label: string; url: string }>,
   });
@@ -228,7 +227,7 @@ export function ProductDownloadCreateModal({
         platforms: formData.platforms.length > 0 ? formData.platforms : ["All"],
         fileType: formData.fileType,
         deprecated: formData.deprecated,
-        isActive: formData.isActive,
+        isActive: true,
         sortOrder: formData.sortOrder,
         mirrors: formData.mirrors.length > 0 ? formData.mirrors : undefined,
       });
@@ -269,7 +268,6 @@ export function ProductDownloadCreateModal({
       platforms: [],
       fileType: "",
       deprecated: false,
-      isActive: true,
       sortOrder: 1,
       mirrors: [],
     });
@@ -533,17 +531,6 @@ export function ProductDownloadCreateModal({
           </div>
 
           <div className="flex gap-4">
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="isActive"
-                checked={formData.isActive}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, isActive: checked })
-                }
-              />
-              <Label htmlFor="isActive">Active</Label>
-            </div>
-
             <div className="flex items-center space-x-2">
               <Switch
                 id="deprecated"

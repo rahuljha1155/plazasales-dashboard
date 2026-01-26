@@ -48,6 +48,7 @@ import {
 } from "@dnd-kit/sortable";
 import { SortableProductDownloadRow } from "./SortableProductDownloadRow";
 import { useQueryClient } from "@tanstack/react-query";
+import { api } from "@/services/api";
 
 export default function ProductDownloadList() {
   const params = useParams();
@@ -120,6 +121,31 @@ export default function ProductDownloadList() {
     }
   };
 
+  const handleToggleDeprecated = async (downloadId: string, deprecated: boolean) => {
+    try {
+      // Update the local state optimistically
+      setDownloads(prevDownloads =>
+        prevDownloads.map(d =>
+          d.id === downloadId ? { ...d, deprecated } : d
+        )
+      );
+      
+      // Make the API call to update deprecated status
+      await api.put(`/product-download/update-download/${downloadId}`, { deprecated });
+      
+      toast.success(`Download ${deprecated ? 'marked as deprecated' : 'unmarked as deprecated'}`);
+      queryClient.invalidateQueries({ queryKey: ["product-downloads-by-product", productId] });
+    } catch (error: any) {
+      // Revert on error
+      setDownloads(prevDownloads =>
+        prevDownloads.map(d =>
+          d.id === downloadId ? { ...d, deprecated: !deprecated } : d
+        )
+      );
+      toast.error(error?.response?.data?.message || "Failed to update deprecated status");
+    }
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
@@ -180,6 +206,7 @@ export default function ProductDownloadList() {
     onView: (download) => setViewDownload(download),
     onDelete: handleDelete,
     onDownloadFile: handleDownloadFile,
+    onToggleDeprecated: handleToggleDeprecated,
     isDeletePending: isDeletePending,
   });
 

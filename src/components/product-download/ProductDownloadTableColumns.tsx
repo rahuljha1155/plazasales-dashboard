@@ -1,6 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { CaretSortIcon } from "@radix-ui/react-icons";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import {
@@ -30,6 +31,7 @@ interface ProductDownloadTableColumnsProps {
     onView: (download: ProductDownload) => void;
     onDelete: (id: string) => void;
     onDownloadFile: (id: string) => void;
+    onToggleDeprecated?: (id: string, deprecated: boolean) => void;
     isDeletePending: boolean;
 }
 
@@ -38,6 +40,7 @@ export const createProductDownloadColumns = ({
     onView,
     onDelete,
     onDownloadFile,
+    onToggleDeprecated,
     isDeletePending,
 }: ProductDownloadTableColumnsProps): ColumnDef<ProductDownload>[] => [
         {
@@ -164,6 +167,29 @@ export const createProductDownloadColumns = ({
                     )}
                 </div>
             ),
+        },
+        {
+            accessorKey: "deprecated",
+            header: () => (
+                <div className="font-semibold text-gray-700">Deprecated</div>
+            ),
+            cell: ({ row }) => {
+                const download = row.original;
+                return (
+                    <div onClick={(e) => e.stopPropagation()}>
+                        <Switch
+                            checked={download.deprecated}
+                            onCheckedChange={(checked) => {
+                                // Call the onToggleDeprecated handler
+                                if (onToggleDeprecated) {
+                                    onToggleDeprecated(download.id, checked);
+                                }
+                            }}
+                            className="data-[state=checked]:bg-orange-500"
+                        />
+                    </div>
+                );
+            },
         },
         {
             id: "actions",

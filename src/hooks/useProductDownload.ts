@@ -79,6 +79,9 @@ export const useCreateProductDownload = () => {
             formData.append(key, JSON.stringify(value));
           } else if (value instanceof File) {
             formData.append(key, value);
+          } else if (typeof value === 'boolean') {
+            // Explicitly handle boolean values
+            formData.append(key, value ? 'true' : 'false');
           } else {
             formData.append(key, String(value));
           }
@@ -122,6 +125,9 @@ export const useUpdateProductDownload = () => {
             formData.append(key, JSON.stringify(value));
           } else if (value instanceof File) {
             formData.append(key, value);
+          } else if (typeof value === 'boolean') {
+            // Explicitly handle boolean values
+            formData.append(key, value ? 'true' : 'false');
           } else {
             formData.append(key, String(value));
           }
