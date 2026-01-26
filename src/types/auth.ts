@@ -2,7 +2,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  // Add other user properties as needed
+  // Add other user properties as needed okk bro
 }
 
 export interface AuthStore {
