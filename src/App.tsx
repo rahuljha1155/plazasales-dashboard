@@ -193,6 +193,7 @@ function App() {
                 <Route path="category/:cid/subcategory/:id/products/:pid/view/:vid" element={<ViewProduct />} />
                 <Route path="category/:cid/subcategory/:id/products/:pid/create/:vid" element={<CreateProduct />} />
                 <Route path="products/search" element={<ProductSearchPage />} />
+                <Route path="products/view/:id" element={<ViewProduct />} />
                 <Route path="deleted-products" element={<DeletedProductList />} />
                 <Route path="products/create" element={<CreateProduct />} />
                 <Route path="products/gallery/deleted" element={<DeletedGalleryList />} />
