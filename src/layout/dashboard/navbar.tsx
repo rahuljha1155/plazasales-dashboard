@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import UserMenu from "./use-menu";
 import {
   DropdownMenu,
@@ -34,6 +34,8 @@ export default function Navbar({
   const [searchQuery, setSearchQuery] = useState(
     searchParams.get("query") || ""
   );
+  const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
+  const [shouldAutoSearch, setShouldAutoSearch] = useState(false);
 
   // Fetch unread contacts
   const { data: contactData } = useGetAllContacts(1, 50);
@@ -42,9 +44,36 @@ export default function Navbar({
   const displayContacts = unreadContacts.slice(0, 10);
   const unreadCount = unreadContacts.length;
 
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 500); // 500ms delay
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [searchQuery]);
+
+  // Auto-search when debounced query changes (only if user is typing)
+  useEffect(() => {
+    if (debouncedQuery.trim() && shouldAutoSearch) {
+      router(
+        `/dashboard/products/search?search=${encodeURIComponent(debouncedQuery.trim())}`
+      );
+      setShouldAutoSearch(false); // Reset after navigation
+    }
+  }, [debouncedQuery]);
+
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setShouldAutoSearch(true); // Enable auto-search when user types
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
+      setShouldAutoSearch(false); // Disable auto-search for manual submit
       router(
         `/dashboard/products/search?search=${encodeURIComponent(searchQuery.trim())}`
       );
@@ -74,7 +103,7 @@ export default function Navbar({
                 type="text"
                 placeholder="Search packages..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={handleSearchInputChange}
                 className="w-full pl-5 pr-4 py-2 bg-white border border-gray-200 rounded-sm focus-visible:ring focus-visible:ring-orange-400 focus-visible:border-transparent transition-all placeholder:text-gray-400"
               />
               <Button
@@ -112,7 +141,7 @@ export default function Navbar({
               <div className="p-4 border-b flex items-center justify-between">
                 <h2 className="font-semibold text-sm text-zinc-800">Notifications</h2>
                 {unreadCount > 0 && (
-                  <span className=" text-green-500 py-0.5! text-sm! font-medium! border-none hover:bg-green-500 font-bold">
+                  <span className="text-green-500 py-0.5 text-sm font-bold border-none hover:bg-green-500">
                     {unreadCount} New
                   </span>
                 )}

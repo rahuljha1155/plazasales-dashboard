@@ -119,7 +119,16 @@ export default function ProductSearchPage() {
                   data={products}
                   onRowClick={(row) => {
                     setSelectedProduct(row);
-                    navigate(`/dashboard/products/view/${row.id}`);
+                    // Navigate to the proper product view route with all required params
+                    const brandSlug = row.brand?.slug || row.brandId?.slug || '';
+                    const categorySlug = row.category?.slug || row.categoryId?.slug || '';
+                    const subcategorySlug = row.subcategory?.slug || row.subcategoryId?.slug || '';
+                    
+                    if (brandSlug && categorySlug && subcategorySlug) {
+                      navigate(`/dashboard/category/${brandSlug}/subcategory/${categorySlug}/products/${subcategorySlug}/view/${row.id}`);
+                    } else {
+                      toast.error("Unable to navigate: Missing product hierarchy information");
+                    }
                   }}
                   onRowSelectionChange={(rows: any) => setSelectedRows(rows)}
                   elements={
