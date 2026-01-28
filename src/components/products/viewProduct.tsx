@@ -15,7 +15,8 @@ import Breadcrumb from "../dashboard/Breadcumb";
 import { Pricing } from "@/pages/seoContent/pricing";
 
 export default function ViewProduct() {
-  const { vid } = useParams<{ vid: string }>();
+  const { vid, id } = useParams<{ vid?: string; id?: string }>();
+  const productId = vid || id; // Use vid from full route or id from simple route
   const { selectedBrand, selectedCategory, selectedSubcategory, selectedProduct } = useSelectedDataStore()
   const decodeHtml = (html: string) => {
     const textarea = document.createElement("textarea");
@@ -24,7 +25,7 @@ export default function ViewProduct() {
   };
 
 
-  const { data: product, isLoading } = useGetProductById(vid || "");
+  const { data: product, isLoading } = useGetProductById(productId || "");
 
   const breadcrumbLinks = [
     { label: selectedBrand?.name || "Brands", href: "/dashboard/brands" },
@@ -48,7 +49,7 @@ export default function ViewProduct() {
         <Breadcrumb links={breadcrumbLinks} />
         <Card>
           <CardContent className="p-6">
-            <p className="text-red-500">Product not found {vid}</p>
+            <p className="text-red-500">Product not found (ID: {productId})</p>
           </CardContent>
         </Card>
       </div>
