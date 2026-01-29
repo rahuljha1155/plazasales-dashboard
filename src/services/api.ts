@@ -2,15 +2,15 @@ import axios from "axios";
 
 //for production
 // const API_BASE_URL =
-//   import.meta.env.VITE_BACKEND_URL ||
-//   "https://app.plazasales.com.np/api/v1/plaza";
-// const API2_BASE_URL =
-//   import.meta.env.VITE_BACKEND_URL ||
-//   "https://app.plazasales.com.np/api/v1/plaza";
+  import.meta.env.VITE_BACKEND_URL ||
+  "https://app.plazasales.com.np/api/v1/plaza";
+const API2_BASE_URL =
+  import.meta.env.VITE_BACKEND_URL ||
+  "https://app.plazasales.com.np/api/v1/plaza";
 
 //for development
-const API_BASE_URL = "/api";
-const API2_BASE_URL = "/api";
+// const API_BASE_URL = "/api";
+// const API2_BASE_URL = "/api";
 
 // Suppress 404 errors from console
 const originalConsoleError = console.error;
