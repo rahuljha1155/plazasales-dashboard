@@ -14,6 +14,7 @@ import { useUserStore } from "@/store/userStore";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../ui/alert-dialog";
 import { ExportConfigDialog } from "../ExportConfigDialog";
+import { useToggleProductPublished, useToggleProductPopular } from "@/services/product";
 
 
 export default function ProductSearchPage() {
@@ -21,7 +22,7 @@ export default function ProductSearchPage() {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get("search") || "";
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit, setLimit] = useState(10);
   const { user } = useUserStore();
   const isSudoAdmin = user?.role === UserRole.SUDOADMIN;
   const { setSelectedProduct } = useSelectedDataStore();
@@ -37,6 +38,26 @@ export default function ProductSearchPage() {
   const currentPage = response?.data?.page || 1;
   // Delete logic (single and bulk)
   const { mutateAsync: deleteProduct, isPending: isDeleting } = useDeleteProduct();
+  
+  // Toggle hooks
+  const { mutate: togglePublished } = useToggleProductPublished();
+  const { mutate: togglePopular } = useToggleProductPopular();
+
+  const handleTogglePublished = (productId: string, isPublished: boolean) => {
+    togglePublished({ productId, isPublished }, {
+      onSuccess: () => {
+        refetch(); // Refetch search results after successful update
+      }
+    });
+  };
+
+  const handleTogglePopular = (productId: string, isPopular: boolean) => {
+    togglePopular({ productId, isPopular }, {
+      onSuccess: () => {
+        refetch(); // Refetch search results after successful update
+      }
+    });
+  };
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -115,7 +136,14 @@ export default function ProductSearchPage() {
             </Card>
           ) : (
             <DataTable
-                  columns={createProductsColumns({ navigate, params: {}, setDeleteId, isSudoAdmin })}
+                  columns={createProductsColumns({ 
+                    navigate, 
+                    params: {}, 
+                    setDeleteId, 
+                    isSudoAdmin,
+                    onTogglePublished: handleTogglePublished,
+                    onTogglePopular: handleTogglePopular,
+                  })}
                   data={products}
                   onRowClick={(row) => {
                     setSelectedProduct(row);
@@ -172,10 +200,17 @@ export default function ProductSearchPage() {
                   pagination={{
                     currentPage: currentPage,
                     totalPages: totalPages,
-                totalItems: total,
-                itemsPerPage: limit,
-                onPageChange: (newPage: number) => setPage(newPage),
-              }}
+                    totalItems: total,
+                    itemsPerPage: limit,
+                    onPageChange: (newPage: number) => setPage(newPage),
+                    onItemsPerPageChange: (newLimit: number) => {
+                      setLimit(newLimit);
+                      setPage(1); // Reset to first page when changing items per page
+                    },
+                    showItemsPerPage: true,
+                    showPageInput: true,
+                    showPageInfo: true,
+                  }}
             />
           )}
         </CardContent>

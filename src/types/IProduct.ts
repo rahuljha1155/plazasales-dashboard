@@ -41,6 +41,7 @@ export interface ICreateProductResponse {
  */
 export interface IGetAllProductsQuery {
   page?: number;
+  limit?: number;
   search?: string;
 }
 

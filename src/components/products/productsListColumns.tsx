@@ -7,7 +7,6 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { IProduct } from "@/types/IProduct";
 import { useSelectedDataStore } from "@/store/selectedStore";
-import { useToggleProductPublished, useToggleProductPopular } from "@/services/product";
 
 interface CreateProductsColumnsParams {
   navigate: (path: string) => void;
@@ -19,6 +18,8 @@ interface CreateProductsColumnsParams {
   };
   setDeleteId: (id: string) => void;
   isSudoAdmin: boolean;
+  onTogglePublished?: (productId: string, isPublished: boolean) => void;
+  onTogglePopular?: (productId: string, isPopular: boolean) => void;
 }
 
 export const createProductsColumns = ({
@@ -26,6 +27,8 @@ export const createProductsColumns = ({
   params,
   setDeleteId,
   isSudoAdmin,
+  onTogglePublished,
+  onTogglePopular,
 }: CreateProductsColumnsParams): ColumnDef<IProduct>[] => [
     {
       id: "select",
@@ -91,19 +94,20 @@ export const createProductsColumns = ({
       header: "Published",
       cell: ({ row }) => {
         const product = row.original;
-        const { mutate: togglePublished, isPending } = useToggleProductPublished();
+        console.log("Published cell render:", { productId: product.id, isPublished: product.isPublished }); // Debug
 
         return (
-          <Switch
-            checked={product.isPublished}
-            onCheckedChange={(checked) => {
-              togglePublished({
-                productId: product.id,
-                isPublished: checked,
-              });
-            }}
-            disabled={isPending}
-          />
+          <div onClick={(e) => e.stopPropagation()}>
+            <Switch
+              checked={product.isPublished}
+              onCheckedChange={(checked) => {
+                console.log("Published switch changed:", { productId: product.id, checked }); // Debug
+                if (onTogglePublished) {
+                  onTogglePublished(product.id, checked);
+                }
+              }}
+            />
+          </div>
         );
       },
     },
@@ -112,19 +116,18 @@ export const createProductsColumns = ({
       header: "Popular",
       cell: ({ row }) => {
         const product = row.original;
-        const { mutate: togglePopular, isPending } = useToggleProductPopular();
 
         return (
-          <Switch
-            checked={product.isPopular}
-            onCheckedChange={(checked) => {
-              togglePopular({
-                productId: product.id,
-                isPopular: checked,
-              });
-            }}
-            disabled={isPending}
-          />
+          <div onClick={(e) => e.stopPropagation()}>
+            <Switch
+              checked={product.isPopular}
+              onCheckedChange={(checked) => {
+                if (onTogglePopular) {
+                  onTogglePopular(product.id, checked);
+                }
+              }}
+            />
+          </div>
         );
       },
     },

@@ -5,7 +5,7 @@ import {
   useDeleteBulkProducts,
 } from "@/hooks/useProduct";
 import { useSelectionStore } from "@/store/selectionStore";
-import { useGetProductsBySubcategory, useUpdateProductSortOrder } from "@/services/product";
+import { useGetProductsBySubcategory, useUpdateProductSortOrder, useToggleProductPublished, useToggleProductPopular } from "@/services/product";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   DndContext,
@@ -70,7 +70,7 @@ export default function ProductsList() {
   // Get page from URL or default to 1
   const pageFromUrl = parseInt(searchParams.get("page") || "1", 10);
   const [page, setPage] = useState(pageFromUrl);
-  const [limit] = useState(10);
+  const [limit, setLimit] = useState(10);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const { user } = useUserStore();
   const isSudoAdmin = user?.role === UserRole.SUDOADMIN;
@@ -96,6 +96,18 @@ export default function ProductsList() {
 
   const updateSortOrderMutation = useUpdateProductSortOrder();
   const queryClient = useQueryClient();
+  
+  // Toggle hooks
+  const { mutate: togglePublished } = useToggleProductPublished();
+  const { mutate: togglePopular } = useToggleProductPopular();
+
+  const handleTogglePublished = (productId: string, isPublished: boolean) => {
+    togglePublished({ productId, isPublished });
+  };
+
+  const handleTogglePopular = (productId: string, isPopular: boolean) => {
+    togglePopular({ productId, isPopular });
+  };
 
   // Sortable row component
   const DraggableRow = ({ id, children }: { id: string; company: any; children: React.ReactNode }) => {
@@ -226,7 +238,7 @@ export default function ProductsList() {
 
   const subcategoryQuery = useGetProductsBySubcategory(
     subcategoryId,
-    { page }
+    { page, limit }
   );
 
 
@@ -329,7 +341,14 @@ export default function ProductsList() {
                     strategy={verticalListSortingStrategy}
                   >
                     <DataTable
-                      columns={createProductsColumns({ navigate, params, setDeleteId, isSudoAdmin })}
+                      columns={createProductsColumns({ 
+                        navigate, 
+                        params, 
+                        setDeleteId, 
+                        isSudoAdmin,
+                        onTogglePublished: handleTogglePublished,
+                        onTogglePopular: handleTogglePopular,
+                      })}
                       DraggableRow={DraggableRow}
                       onRowClick={(row) => {
                         setSelectedProduct(row)
@@ -398,6 +417,14 @@ export default function ProductsList() {
                         totalItems: data?.data?.total || 0,
                         itemsPerPage: limit,
                         onPageChange: handlePageChange,
+                        onItemsPerPageChange: (newLimit: number) => {
+                          setLimit(newLimit);
+                          setPage(1); // Reset to first page when changing items per page
+                          setSearchParams({ page: "1" }); // Update URL
+                        },
+                        showItemsPerPage: true,
+                        showPageInput: true,
+                        showPageInfo: true,
                       }}
                     />
                   </SortableContext>

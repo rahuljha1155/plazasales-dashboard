@@ -348,13 +348,13 @@ export const useToggleProductPublished = () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
 
       toast.success(
-        (data as any)?.message || "Product status updated successfully",
+        (data as any)?.message || "Product published status updated successfully",
         { position: "bottom-right" }
       );
     },
     onError: (error: any) => {
       toast.error(
-        error.response?.data?.message || "Failed to update product status",
+        error.response?.data?.message || "Failed to update product published status",
         { position: "bottom-right" }
       );
     }
