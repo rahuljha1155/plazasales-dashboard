@@ -1,7 +1,7 @@
 import axios from "axios";
 
 //for production
-// const API_BASE_URL =
+const API_BASE_URL =
   import.meta.env.VITE_BACKEND_URL ||
   "https://app.plazasales.com.np/api/v1/plaza";
 const API2_BASE_URL =
