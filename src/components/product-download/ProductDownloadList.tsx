@@ -82,10 +82,48 @@ export default function ProductDownloadList() {
 
   useEffect(() => {
     if (data?.downloads) {
-      const sortedDownloads = [...data.downloads].sort((a, b) => a.sortOrder - b.sortOrder);
+      // Debug: Log the data to see what we're working with
+      console.log('=== DOWNLOAD DEBUG INFO ===');
+      console.log('All downloads:', data.downloads);
+      console.log('Current categoryId from URL:', categoryId);
+      console.log('Current productId from URL:', productId);
+      console.log('Downloads details:', data.downloads.map(d => ({ 
+        id: d.id, 
+        title: d.title, 
+        categoryId: d.categoryId,
+        productId: d.productId 
+      })));
+      
+      // Filter downloads:
+      // - If download has a categoryId, only show if it matches the current category
+      // - If download has no categoryId (undefined/null), show it in all categories (legacy support)
+      let filteredDownloads = data.downloads;
+      
+      if (categoryId) {
+        filteredDownloads = data.downloads.filter(
+          (download) => {
+            // Show download if:
+            // 1. It has no categoryId (legacy downloads) OR
+            // 2. Its categoryId matches the current category
+            const hasNoCategoryId = !download.categoryId;
+            const matchesCategory = download.categoryId === categoryId;
+            const shouldShow = hasNoCategoryId || matchesCategory;
+            
+            console.log(`Download "${download.title}" - categoryId: ${download.categoryId}, hasNoCategoryId: ${hasNoCategoryId}, matches: ${matchesCategory}, shouldShow: ${shouldShow}`);
+            return shouldShow;
+          }
+        );
+        console.log('Filtered downloads count:', filteredDownloads.length);
+        console.log('Filtered downloads:', filteredDownloads);
+      }
+      
+      const sortedDownloads = [...filteredDownloads].sort((a, b) => a.sortOrder - b.sortOrder);
       setDownloads(sortedDownloads);
+      console.log('=== END DEBUG INFO ===');
+    } else {
+      console.log('No downloads data available');
     }
-  }, [data]);
+  }, [data, categoryId, productId]);
 
   const handleDelete = async (id: string) => {
     try {

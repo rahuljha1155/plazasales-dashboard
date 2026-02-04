@@ -204,6 +204,7 @@ export default function SharableEditModal({ sharable, onSuccess, onCancel }: Sha
                                 <option value="LOGO">Logo</option>
                                 <option value="BROCHURE">Brochure</option>
                                 <option value="MANUAL">Manual</option>
+                                <option value="PRICE_LIST">Price List</option>
                                 <option value="OTHER">Other</option>
                             </select>
                             {errors.kind && (
