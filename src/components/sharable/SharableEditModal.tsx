@@ -64,6 +64,15 @@ export default function SharableEditModal({ sharable, onSuccess, onCancel }: Sha
 
     const isActive = watch("isActive");
 
+    // Cleanup preview URL on unmount
+    useEffect(() => {
+        return () => {
+            if (mediaPreview) {
+                URL.revokeObjectURL(mediaPreview);
+            }
+        };
+    }, [mediaPreview]);
+
     useEffect(() => {
         if (sharable) {
             reset({
@@ -73,7 +82,7 @@ export default function SharableEditModal({ sharable, onSuccess, onCancel }: Sha
                 fileType: sharable.fileType,
                 isActive: sharable.isActive,
                 sortOrder: sharable.sortOrder,
-                extra: sharable.extra,
+                extra: sharable.extra || "",
             });
             setExistingMedia(sharable.mediaAsset?.fileUrl || "");
         }

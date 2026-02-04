@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import {
@@ -59,6 +59,15 @@ export default function SharableCreateModal({ productId, onSuccess, onCancel }: 
 
     const isActive = watch("isActive");
 
+    // Cleanup preview URL on unmount
+    useEffect(() => {
+        return () => {
+            if (mediaPreview) {
+                URL.revokeObjectURL(mediaPreview);
+            }
+        };
+    }, [mediaPreview]);
+
     const handleMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -72,11 +81,11 @@ export default function SharableCreateModal({ productId, onSuccess, onCancel }: 
 
         setMediaFile(file);
         setMediaPreview(URL.createObjectURL(file));
-        
+
         // Auto-detect and set file type
         const fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
         setValue("fileType", fileExtension);
-        
+
         e.target.value = "";
     };
 
