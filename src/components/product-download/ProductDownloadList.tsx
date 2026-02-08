@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  useGetDownloadsByProductId,
+  useGetDownloadsByCategoryId,
   useDeleteProductDownload,
   useDownloadFile,
   useUpdateProductDownloadSortOrder,
@@ -66,7 +66,7 @@ export default function ProductDownloadList() {
 
   const { selectedBrand, selectedCategory, selectedSubcategory, selectedProduct } = useSelectedDataStore();
 
-  const { data, isLoading, error } = useGetDownloadsByProductId(productId);
+  const { data, isLoading, error } = useGetDownloadsByCategoryId(categoryId);
   const { mutateAsync: deleteDownload, isPending: isDeletePending } = useDeleteProductDownload();
   const downloadFileMutation = useDownloadFile();
   const { mutateAsync: updateSortOrder } = useUpdateProductDownloadSortOrder();
@@ -82,28 +82,11 @@ export default function ProductDownloadList() {
 
   useEffect(() => {
     if (data?.downloads) {
-      // Filter downloads:
-      // - If download has a categoryId, only show if it matches the current category
-      // - If download has no categoryId (undefined/null), show it in all categories (legacy support)
-      let filteredDownloads = data.downloads;
-      
-      if (categoryId) {
-        filteredDownloads = data.downloads.filter(
-          (download) => {
-            // Show download if:
-            // 1. It has no categoryId (legacy downloads) OR
-            // 2. Its categoryId matches the current category
-            const hasNoCategoryId = !download.categoryId;
-            const matchesCategory = download.categoryId === categoryId;
-            return hasNoCategoryId || matchesCategory;
-          }
-        );
-      }
-      
-      const sortedDownloads = [...filteredDownloads].sort((a, b) => a.sortOrder - b.sortOrder);
+      // Backend already filters by categoryId, just sort the results
+      const sortedDownloads = [...data.downloads].sort((a, b) => a.sortOrder - b.sortOrder);
       setDownloads(sortedDownloads);
     }
-  }, [data, categoryId, productId]);
+  }, [data]);
 
   const handleDelete = async (id: string) => {
     try {
@@ -203,7 +186,7 @@ export default function ProductDownloadList() {
       toast.success("Download order updated successfully");
       
       // Refetch to get the updated data from server
-      queryClient.invalidateQueries({ queryKey: ["product-downloads-by-product", productId] });
+      queryClient.invalidateQueries({ queryKey: ["product-downloads-by-category", categoryId] });
     } catch (error: any) {
       // Revert on error
       setDownloads(downloads);

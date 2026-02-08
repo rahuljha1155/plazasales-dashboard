@@ -51,6 +51,18 @@ export const useGetDownloadsByProductId = (productId: string) => {
   });
 };
 
+// Get downloads by category ID
+export const useGetDownloadsByCategoryId = (categoryId: string) => {
+  return useQuery<GetDownloadsByProductResponse>({
+    queryKey: ["product-downloads-by-category", categoryId],
+    queryFn: async () => {
+      const response = await api.get(`/product-download/get-downloads-by-category/${categoryId}`);
+      return response.data;
+    },
+    enabled: !!categoryId,
+  });
+};
+
 // Get product download by ID
 export const useGetProductDownloadById = (downloadId: string) => {
   return useQuery<GetDownloadResponse>({
@@ -98,6 +110,7 @@ export const useCreateProductDownload = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["product-downloads"] });
+      queryClient.invalidateQueries({ queryKey: ["product-downloads-by-category"] });
     },
   });
 };
@@ -161,6 +174,7 @@ export const useDeleteProductDownload = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["product-downloads"] });
       queryClient.invalidateQueries({ queryKey: ["product-downloads-by-product"] });
+      queryClient.invalidateQueries({ queryKey: ["product-downloads-by-category"] });
     },
   });
 };
@@ -191,6 +205,7 @@ export const useRecoverProductDownloads = () => {
       queryClient.invalidateQueries({ queryKey: ["deleted-product-downloads"] });
       queryClient.invalidateQueries({ queryKey: ["product-downloads"] });
       queryClient.invalidateQueries({ queryKey: ["product-downloads-by-product"] });
+      queryClient.invalidateQueries({ queryKey: ["product-downloads-by-category"] });
     },
   });
 };
@@ -257,6 +272,7 @@ export const useUpdateProductDownloadSortOrder = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["product-downloads"] });
       queryClient.invalidateQueries({ queryKey: ["product-downloads-by-product"] });
+      queryClient.invalidateQueries({ queryKey: ["product-downloads-by-category"] });
     },
   });
 };

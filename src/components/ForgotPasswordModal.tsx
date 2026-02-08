@@ -51,25 +51,37 @@ export default function ForgotPasswordModal({
       setIsLoading(true);
       const res = await api2.post("/auth/forgot-password", values);
       
-      if (res.data.status === 200) {
-        toast.success(res.data.message || "Password reset link sent to your email",{
-          description: "Please check your inbox and follow the instructions to reset your password.",
-          position: "bottom-right",
-          duration: 8000,
-          richColors: true,
-
-        });
-        form.reset();
-        onOpenChange(false);
+      // Check if the response indicates success
+      if (res.data.status === 200 || res.status === 200) {
+        // Check if the message indicates an error (like "user not found")
+        const message = res.data.message || "";
+        const isError = message.toLowerCase().includes("not found") || 
+                       message.toLowerCase().includes("does not exist") ||
+                       message.toLowerCase().includes("invalid");
+        
+        if (isError) {
+          toast.error(message, {
+            description: "Please check the email address and try again.",
+            position: "bottom-right",
+            duration: 5000,
+          });
+        } else {
+          toast.success(message || "Password reset link sent to your email", {
+            description: "Please check your inbox and follow the instructions to reset your password.",
+            position: "bottom-right",
+            duration: 8000,
+          });
+          form.reset();
+          onOpenChange(false);
+        }
       }
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.message || "Failed to send reset link";
-      toast.error(errorMessage || "An unexpected error occurred. Please try again.",{
+      toast.error(errorMessage, {
         description: "If the issue persists, contact support for assistance.",
         position: "bottom-right",
-        duration: 8000,
-        richColors: true,
+        duration: 5000,
       });
     } finally {
       setIsLoading(false);
