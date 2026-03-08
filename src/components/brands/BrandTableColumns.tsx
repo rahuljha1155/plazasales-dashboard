@@ -237,6 +237,23 @@ export const createBrandColumns = ({
 
                 <DropdownMenuSeparator />
 
+                <DropdownMenuItem
+                  onClick={() => {
+                    useSelectionStore.getState().setSelection({
+                      brandId: brand.id,
+                      categoryId: null,
+                      subcategoryId: null,
+                    });
+                    navigate(`/dashboard/brands/${brand.id}/selling-points`);
+                  }}
+                  className="flex gap-2 items-center"
+                >
+                  <Icon icon="solar:star-bold" className=" text-gray-500" width="16" />
+                  Manage Selling Points
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+
                 <DropdownMenuItem className="flex gap-2 items-center" onClick={() => onView(brand)}>
                   <Icon
                     icon="solar:eye-bold"

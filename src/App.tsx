@@ -131,6 +131,7 @@ import { GoogleReCaptchaProvider } from "react-google-recaptcha-v3";
 import ALLSITESEO from "./components/seo-metadata/site-seo-create";
 import ReviewList from "./components/reviews/ReviewList";
 import DeletedReviewList from "./components/reviews/DeletedReviewList";
+import { BrandSellingPointsPage, SellingPointCreatePage, SellingPointEditPage, DeletedSellingPointsPage } from "./components/selling-points";
 
 // Technology
 import {
@@ -173,6 +174,10 @@ function App() {
                 <Route path="brands/create" element={<BrandCreatePage />} />
                 <Route path="brands/edit/:slug" element={<BrandEditPage />} />
                 <Route path="brands/view/:slug" element={<BrandViewPage />} />
+                <Route path="brands/:brandId/selling-points" element={<BrandSellingPointsPage />} />
+                <Route path="brands/:brandId/selling-points/create" element={<SellingPointCreatePage />} />
+                <Route path="brands/:brandId/selling-points/edit/:id" element={<SellingPointEditPage />} />
+                <Route path="brands/:brandId/selling-points/deleted" element={<DeletedSellingPointsPage />} />
                 <Route path="deleted-brands" element={<DeletedBrandList />} />
                 <Route path="deleted-categories" element={<DeletedCategoryList />} />
                 <Route path="category/:id" element={<SubCategoryPage />} />
