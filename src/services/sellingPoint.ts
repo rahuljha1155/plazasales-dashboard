@@ -96,13 +96,9 @@ export const sellingPointServices = {
     if (data.subtitle) formData.append("subtitle", data.subtitle);
     if (data.sortOrder !== undefined) formData.append("sortOrder", data.sortOrder.toString());
 
-    // Only append icon if it exists and is not empty
-    if (data.icon) {
-      if (data.icon instanceof File) {
-        formData.append("icon", data.icon);
-      } else if (typeof data.icon === "string" && data.icon.trim() !== "") {
-        formData.append("icon", data.icon);
-      }
+    // Only append icon if it's a File (new upload), not if it's a string URL (existing icon)
+    if (data.icon && data.icon instanceof File) {
+      formData.append("icon", data.icon);
     }
 
     const response = await api2.put<IUpdateSellingPointResponse>(

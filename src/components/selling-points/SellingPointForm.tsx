@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useState } from "react";
+import * as React from "react";
 import { Upload, X } from "lucide-react";
 import type { ISellingPoint } from "@/types/ISellingPoint";
 
@@ -52,6 +53,19 @@ export function SellingPointForm({
     },
   });
 
+  // Set brandId explicitly when in edit mode
+  React.useEffect(() => {
+    if (defaultValues?.brandId) {
+      setValue("brandId", defaultValues.brandId);
+    }
+  }, [defaultValues?.brandId, setValue]);
+
+  const handleFormSubmit = (data: SellingPointFormData) => {
+    console.log("Form submitted with data:", data);
+    console.log("Form errors:", errors);
+    onSubmit(data);
+  };
+
   const handleIconChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -70,8 +84,8 @@ export function SellingPointForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      {!defaultValues && (
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+      {!defaultValues ? (
         <div className="space-y-2">
           <Label htmlFor="brandId">Brand *</Label>
           <Select
@@ -94,7 +108,7 @@ export function SellingPointForm({
             <p className="text-sm text-red-500">{errors.brandId.message}</p>
           )}
         </div>
-      )}
+      ) : null}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="space-y-2 md:col-span-2">
@@ -184,8 +198,13 @@ export function SellingPointForm({
         >
           Back
         </Button>
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? "Saving..." : defaultValues ? "Update" : "Create"}
+       <Button 
+          type="submit" 
+          disabled={isLoading}
+        >
+          {isLoading
+            ? (defaultValues ? "Updating..." : "Creating...")
+            : (defaultValues ? "Update" : "Create")}
         </Button>
       </div>
     </form>

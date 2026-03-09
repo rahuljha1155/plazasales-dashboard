@@ -72,7 +72,10 @@ export function SellingPointEditPage() {
         <SellingPointForm
           onSubmit={handleSubmit}
           isLoading={updatePoint.isPending}
-          defaultValues={sellingPoint}
+          defaultValues={{
+            ...sellingPoint,
+            brandId: sellingPoint.brand?.id || sellingPoint.brandId,
+          }}
           brands={brands}
         />
       </div>
