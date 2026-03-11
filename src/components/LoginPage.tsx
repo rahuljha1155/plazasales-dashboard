@@ -83,12 +83,23 @@ export default function LoginPage() {
       }
 
     } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.msg || "An error occurred during login";
-      toast.error(error?.response?.data?.message || errorMessage, {
+      let errorMessage = "An error occurred during login";
+      let description = "Please check your credentials and try again.";
+      
+      // Handle specific error cases
+      if (error.response?.status === 401) {
+        errorMessage = "Invalid credentials";
+        description = "Please check your email and password and try again.";
+      } else if (error.response?.status === 403) {
+        errorMessage = "Access denied";
+        description = "You don't have permission to access this system.";
+      } else {
+        errorMessage = error.response?.data?.message || error.response?.data?.msg || errorMessage;
+      }
+      
+      toast.error(errorMessage, {
         position: "bottom-right",
-        description: "Please check your credentials and try again.",
-
+        description: description,
       });
     } finally {
       setILoging(false);
