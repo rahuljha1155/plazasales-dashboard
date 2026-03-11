@@ -66,7 +66,7 @@ export function BrandSellingPointsPage() {
   const isSudoAdmin = user?.role === UserRole.SUDOADMIN;
 
   const { data: brandData, isLoading: isBrandLoading } = useGetBrandById(brandId || "");
-  const { data, isLoading } = useGetAllSellingPoints();
+  const { data, isLoading } = useGetAllSellingPoints(1, 30);
   const deletePoint = useDeleteSellingPoint();
   const { mutateAsync: updateSortOrder } = useUpdateSellingPointSortOrder();
 
